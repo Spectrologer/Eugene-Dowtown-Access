@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eugene Access</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet.js for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+        }
+
+        /* Leaflet map container */
+        #map {
+            height: 100vh;
+            width: 100vw;
+            z-index: 10;
+        }
+        
+        /* Dark mode map tiles */
+        .dark .leaflet-tile-pane {
+            filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+        }
+
+        /* Custom marker styling */
+        .custom-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            width: 30px;
+            height: 30px;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .custom-marker svg {
+            width: 16px;
+            height: 16px;
+            fill: white;
+        }
+        
+        /* Hover effect for marker */
+        .leaflet-marker-icon:hover .custom-marker {
+            transform: scale(1.25);
+        }
+        
+        /* Animation for modals */
+        .modal-enter {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        .modal-leave {
+            animation: fadeOut 0.3s ease-in forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(20px); }
+        }
+        
+        /* Legend filter styling */
+        #map-legend > div[data-filter] {
+            cursor: pointer;
+            transition: opacity 0.2s ease-in-out;
+        }
+        #map-legend > div[data-filter]:not(.filter-active) {
+            opacity: 0.6;
+        }
+        #map-legend > div[data-filter]:not(.filter-active):hover {
+            opacity: 0.9;
+        }
+    </style>
+    <script>
+      // Apply Tailwind dark mode
+      tailwind.config = {
+        darkMode: 'class',
+      }
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 overflow-hidden">
+
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- UI Overlays -->
+    <div class="absolute top-4 left-4 z-20 flex flex-col gap-3">
+        <!-- Settings/Info Button -->
+        <button id="settings-btn" class="p-3 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg" title="Settings">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+    </div>
+    
+    <!-- Add Location Button -->
+     <button id="add-location-btn" class="absolute bottom-4 right-4 z-20 p-4 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-transform transform hover:scale-105" title="Submit a Service">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+
+    <!-- Map Legend -->
+    <div id="map-legend" class="absolute bottom-20 right-4 z-20 bg-gray-800/80 backdrop-blur-sm text-white p-3 rounded-lg shadow-lg text-sm space-y-2">
+        <div class="flex items-center gap-2 filter-active" data-filter="all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>
+            <span>All</span>
+        </div>
+        <div class="flex items-center gap-2" data-filter="private">
+            <span class="w-4 h-4 rounded-full bg-purple-600 border-2 border-white"></span>
+            <span>Private</span>
+        </div>
+        <div class="flex items-center gap-2" data-filter="public">
+            <span class="w-4 h-4 rounded-full bg-blue-600 border-2 border-white"></span>
+            <span>Public</span>
+        </div>
+        <div class="flex items-center gap-2" data-filter="dubious">
+            <span class="w-4 h-4 rounded-full bg-gray-500 border-2 border-white"></span>
+            <span>Dubious</span>
+        </div>
+    </div>
+
+
+    <!-- Location Detail Modal -->
+    <div id="detail-modal" class="hidden fixed inset-x-0 bottom-0 z-30 p-4">
+        <div id="detail-modal-content" class="bg-gray-800/80 backdrop-blur-sm text-white max-w-lg mx-auto rounded-xl shadow-2xl p-6 modal-enter">
+            <!-- Content will be injected by JavaScript -->
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 text-white w-full max-w-sm rounded-xl shadow-2xl p-6 modal-enter">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Eugene Access</h2>
+                <button id="close-settings-btn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <p class="text-gray-400 mb-6 text-sm">An app to help people find essential services in downtown Eugene.</p>
+            
+            <div class="space-y-4">
+                 <div class="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="m4.22 4.22 1.42 1.42"/><path d="m18.36 18.36 1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="m4.22 19.78 1.42-1.42"/><path d="m18.36 5.64 1.42-1.42"/></svg>
+                        <span>Light Mode</span>
+                    </div>
+                    <button id="theme-toggle" class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors bg-gray-600">
+                        <span id="theme-toggle-indicator" class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform translate-x-1"></span>
+                    </button>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg opacity-50 cursor-not-allowed">
+                    <div class="flex items-center gap-3">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                        <span>Language</span>
+                    </div>
+                    <span class="text-sm text-gray-400">English</span>
+                </div>
+            </div>
+            <a href="http://vaavery.com" target="_blank" rel="noopener noreferrer" class="block text-center mt-6 text-xs text-gray-500 hover:text-gray-400 transition-colors">vaavery.com</a>
+        </div>
+    </div>
+    
+     <!-- Add Location Modal -->
+    <div id="add-modal" class="hidden fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4">
+        <form id="add-form" class="bg-gray-800 text-white w-full max-w-md rounded-xl shadow-2xl p-6 modal-enter overflow-y-auto max-h-[85vh]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Submit a Service</h2>
+                <button id="close-add-btn" type="button" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label for="place_name" class="text-sm text-gray-400">Place Name</label>
+                    <input type="text" id="place_name" name="place_name" required class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label for="address" class="text-sm text-gray-400">Address or Cross-Streets</label>
+                    <input type="text" id="address" name="address" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="tags" class="text-sm text-gray-400">Category (Tags)</label>
+                        <input type="text" id="tags" name="tags" placeholder="e.g., Toilet, Food" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label for="privacy" class="text-sm text-gray-400">Privacy</label>
+                        <input type="text" id="privacy" name="privacy" placeholder="e.g., Public, Private" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label for="access" class="text-sm text-gray-400">Access</label>
+                        <input type="text" id="access" name="access" placeholder="e.g., Free, Customers Only" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label for="gendered" class="text-sm text-gray-400">Gendered</label>
+                        <input type="text" id="gendered" name="gendered" placeholder="e.g., All-Gender, Men's" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="hours" class="text-sm text-gray-400">Hours</label>
+                    <input type="text" id="hours" name="hours" placeholder="e.g., 9am-5pm, 24/7" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                </div>
+                 <div>
+                    <label for="wifi_code" class="text-sm text-gray-400">WiFi Code</label>
+                    <input type="text" id="wifi_code" name="wifi_code" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label for="accessibility" class="text-sm text-gray-400">Accessibility Notes</label>
+                    <input type="text" id="accessibility" name="accessibility" placeholder="e.g., Wheelchair accessible ramp" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label for="notes" class="text-sm text-gray-400">Description / Notes</label>
+                    <textarea id="notes" name="notes" rows="3" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="e.g., Single stall restroom, ask staff for key..."></textarea>
+                </div>
+
+                <input type="hidden" id="lat_long" name="lat_long">
+                <p class="text-xs text-gray-500 pt-2">Your current map location will be submitted with the form.</p>
+                <button type="submit" id="submit-btn" class="w-full p-3 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center">Submit</button>
+            </div>
+        </form>
+    </div>
+
+
+    <script>
+    // This whole script runs after the webpage has finished loading.
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // Sets up the initial map view centered on Eugene.
+        const eugeneCoords = [44.048, -123.090]; 
+        const map = L.map('map', {
+            zoomControl: false, 
+        }).setView(eugeneCoords, 15);
+
+        // This keeps you from dragging the map too far away from the downtown Eugene area.
+        const southWest = L.latLng(44.035, -123.115);
+        const northEast = L.latLng(44.060, -123.070);
+        const bounds = L.latLngBounds(southWest, northEast);
+        map.setMaxBounds(bounds);
+        map.setMinZoom(14); 
+        map.on('drag', function() {
+            map.panInsideBounds(bounds, { animate: false });
+        });
+
+        // This adds the actual map tiles (the streets, buildings, etc.) from OpenStreetMap.
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        // Adds the + and - zoom buttons to the bottom right of the map.
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // Grabs all the interactive pop-up windows (modals) from the HTML so we can show/hide them later.
+        const detailModal = document.getElementById('detail-modal');
+        const detailModalContent = document.getElementById('detail-modal-content');
+        const settingsModal = document.getElementById('settings-modal');
+        const addModal = document.getElementById('add-modal');
+        const addForm = document.getElementById('add-form');
+        const submitBtn = document.getElementById('submit-btn');
+
+        // This will hold all the location data once we fetch it from the Google Sheet.
+        let locationsData = [];
+        let allMarkers = []; // To hold all marker instances for filtering
+        
+        // This part creates the colored map pins.
+        const bathroomIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z"/><path d="M12 12a4.5 4.5 0 0 0-4.5 4.5c0 2.06 1.94 3.5 4.5 3.5s4.5-1.44 4.5-3.5A4.5 4.5 0 0 0 12 12Z"/><path d="M14 12c0-1.66-1.57-3-3.5-3S7 10.34 7 12"/><path d="M17.5 9.5c0-2.2-2.02-4-4.5-4s-4.5 1.8-4.5 4"/></svg>`;
+        
+        // It decides what color the pin should be based on the "Privacy" and "Tags" columns from your sheet.
+        const createCustomIcon = (privacy, tags) => {
+            let bgColorClass = 'bg-purple-600'; // Default is purple for "Recommended"
+            const privacyLower = privacy ? privacy.toLowerCase() : '';
+            const tagsLower = tags ? tags.toLowerCase() : '';
+
+            if (tagsLower.includes('dubious')) {
+                bgColorClass = 'bg-gray-500'; // Gray for "Dubious"
+            } else if (privacyLower === 'public' || privacyLower === 'exposed') {
+                bgColorClass = 'bg-blue-600'; // Blue for "Fine"
+            }
+            
+            const iconHtml = `<div class="custom-marker ${bgColorClass}">${bathroomIconSvg}</div>`;
+            return L.divIcon({
+                className: '',
+                html: iconHtml,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+        };
+
+        // This is where the app grabs the data from your public Google Sheet.
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRMzAQbd3MdmdliQnNSPgFvX2309klOt524-HuUoojAc2c2kLKwG9Ftr75YUhsXzMfJtpFerLGlmQOK/pub?gid=0&single=true&output=csv';
+
+        fetch(CSV_URL)
+            .then(response => {
+                 if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(csvText => {
+                // Once the data is fetched, it gets parsed and then the markers are plotted.
+                locationsData = parseCSV(csvText);
+                plotMarkers();
+                setupFiltering();
+            })
+            .catch(error => {
+                console.error("Error fetching or parsing sheet data:", error);
+            });
+
+        // This function takes the raw text from the Google Sheet and turns it into a structured list of locations.
+        function parseCSV(text) {
+            const lines = text.trim().split(/\r\n|\n/);
+            let headerRowIndex = -1;
+            let headers = [];
+            
+            // First, it finds the header row in your sheet (the one with "Location", "Privacy", etc.).
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (line.includes('Location') && line.includes('Privacy') && line.includes('Access')) {
+                    headerRowIndex = i;
+                    headers = line.split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+                    break;
+                }
+            }
+            
+            if (headerRowIndex === -1) {
+                console.error('Could not find header row with Location column');
+                return [];
+            }
+
+            // Then, it goes through each data row and creates a location object from it.
+            const dataRows = lines.slice(headerRowIndex + 1);
+            return dataRows.map((line) => {
+                if (!line.trim()) return null;
+
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim().replace(/^"|"$/g, ''));
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim().replace(/^"|"$/g, ''));
+
+                if (values.length < headers.length) {
+                    while (values.length < headers.length) {
+                        values.push('');
+                    }
+                }
+
+                const obj = headers.reduce((result, header, i) => {
+                    result[header] = values[i] || '';
+                    return result;
+                }, {});
+                
+                return obj;
+            }).filter(row => row && row['Location'] && row['Location'].trim());
+        }
+        
+        // This function takes the location data and puts a pin on the map for each one.
+        function plotMarkers() {
+            // Clear existing markers before plotting new ones
+            allMarkers.forEach(marker => map.removeLayer(marker));
+            allMarkers = [];
+
+            if (locationsData.length === 0) {
+                console.error('No location data to plot!');
+                return;
+            }
+            
+            locationsData.forEach((loc) => {
+                let lat, long;
+                
+                // It tries to read the coordinates from the "Lat_Long" column.
+                if (loc['Lat_Long']) {
+                    const coordStr = loc['Lat_Long'].trim();
+                    if (coordStr.includes(',')) {
+                        const coords = coordStr.split(',');
+                        lat = parseFloat(coords[0].trim());
+                        long = parseFloat(coords[1].trim());
+                    } else if (coordStr.includes(' ') && !coordStr.includes('°')) {
+                        const coords = coordStr.split(' ');
+                        lat = parseFloat(coords[0].trim());
+                        long = parseFloat(coords[1].trim());
+                    }
+                }
+    
+                // If the coordinates are valid, it creates a marker and adds it to the map.
+                if (!isNaN(lat) && !isNaN(long) && lat !== 0 && long !== 0) {
+                    try {
+                        const marker = L.marker([lat, long], { icon: createCustomIcon(loc['Privacy'], loc['Tags']) });
+                        marker.locationData = loc; // Attach data for filtering
+                        marker.on('click', () => showLocationDetail(loc));
+                        marker.addTo(map);
+                        allMarkers.push(marker);
+                    } catch (error) {
+                        console.error('Error adding marker:', error);
+                    }
+                } else {
+                    console.warn(`Skipping ${loc['Location']} - invalid coordinates.`);
+                }
+            });
+        }
+        
+        // Sets up the click listeners and logic for filtering markers from the legend.
+        function setupFiltering() {
+            const legendItems = document.querySelectorAll('#map-legend > div[data-filter]');
+            
+            legendItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const activeFilter = item.dataset.filter;
+                    
+                    // Update active style in legend
+                    legendItems.forEach(i => i.classList.remove('filter-active'));
+                    item.classList.add('filter-active');
+                    
+                    // Filter markers on the map
+                    filterMarkers(activeFilter);
+                });
+            });
+        }
+
+        // Shows or hides markers based on the currently selected filter.
+        function filterMarkers(activeFilter) {
+            allMarkers.forEach(marker => {
+                const loc = marker.locationData;
+                const privacyLower = loc['Privacy'] ? loc['Privacy'].toLowerCase() : '';
+                const tagsLower = loc['Tags'] ? loc['Tags'].toLowerCase() : '';
+                let show = false;
+
+                if (activeFilter === 'all') {
+                    show = true;
+                } else if (activeFilter === 'dubious') {
+                    if (tagsLower.includes('dubious')) show = true;
+                } else if (activeFilter === 'public') {
+                    if (!tagsLower.includes('dubious') && (privacyLower === 'public' || privacyLower === 'exposed')) {
+                        show = true;
+                    }
+                } else if (activeFilter === 'private') {
+                     if (!tagsLower.includes('dubious') && privacyLower !== 'public' && privacyLower !== 'exposed') {
+                        show = true;
+                    }
+                }
+                
+                if (show) {
+                    if (!map.hasLayer(marker)) map.addLayer(marker);
+                } else {
+                    if (map.hasLayer(marker)) map.removeLayer(marker);
+                }
+            });
+        }
+
+        // This function builds the HTML for the location detail pop-up when you click a pin.
+        function showLocationDetail(loc) {
+            let servicesHtml = '';
+            
+            // It dynamically adds list items for each piece of info from the sheet (Access, Privacy, etc.).
+            if (loc['Access']) {
+                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400 mt-1 flex-shrink-0"><polyline points="20 6 9 17 4 12"></polyline></svg><div><span class="font-semibold">Access: ${loc['Access']}</span></div></li>`;
+            }
+            if (loc['Privacy']) {
+                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400 mt-1 flex-shrink-0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg><div><span class="font-semibold">Privacy: ${loc['Privacy']}</span></div></li>`;
+            }
+            if (loc['Gendered']) {
+                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-pink-400 mt-1 flex-shrink-0"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><div><span class="font-semibold">Type: ${loc['Gendered']}</span></div></li>`;
+            }
+            if (loc['WiFi Code']) {
+                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400 mt-1 flex-shrink-0"><path d="M5 13a10 10 0 0 1 14 0"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M12 20h.01"/></svg><div><span class="font-semibold">WiFi Available</span><p class="text-sm text-gray-400">Code: ${loc['WiFi Code']}</p></div></li>`;
+            }
+            if (loc['Hours']) {
+                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-400 mt-1 flex-shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg><div><span class="font-semibold">Hours: ${loc['Hours']}</span></div></li>`;
+            }
+            if (loc['Accessibility']) {
+                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-orange-400 mt-1 flex-shrink-0"><circle cx="12" cy="4" r="2"/><path d="m10.5 20 6-2V8a1 1 0 0 0-1-1H8.5a1 1 0 0 0-1 1v8.5"/><path d="M7 15a6.5 6.5 0 0 0 5 0"/></svg><div><span class="font-semibold">Accessibility: ${loc['Accessibility']}</span></div></li>`;
+            }
+            
+            // This injects the final HTML into the pop-up and makes it visible.
+            detailModalContent.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-2xl font-bold">${loc['Location'] || 'Unknown Location'}</h3>
+                        <p class="text-gray-400 text-sm">${loc['address'] || 'Address not available'}</p>
+                        ${loc['Tags'] ? `<span class="inline-block mt-2 px-2 py-1 bg-gray-700 text-xs rounded-full">${loc['Tags']}</span>` : ''}
+                    </div>
+                     <button id="close-detail-btn" class="text-gray-400 text-2xl leading-none hover:text-white">&times;</button>
+                </div>
+                ${loc['Notes'] ? `<p class="mt-4 text-gray-300">${loc['Notes']}</p>` : ''}
+                <div class="mt-4 pt-4 border-t border-gray-700">
+                    <h4 class="font-semibold mb-2">Available Services</h4>
+                    <ul class="space-y-2">${servicesHtml}</ul>
+                </div>
+            `;
+            detailModal.classList.remove('hidden');
+            document.getElementById('close-detail-btn').addEventListener('click', closeDetailModal);
+        }
+
+        // This function handles closing the detail pop-up with a nice fade-out animation.
+        function closeDetailModal() {
+            detailModalContent.classList.remove('modal-enter');
+            detailModalContent.classList.add('modal-leave');
+            setTimeout(() => {
+                detailModal.classList.add('hidden');
+                detailModalContent.classList.remove('modal-leave');
+                detailModalContent.classList.add('modal-enter');
+            }, 300);
+        }
+
+        // This lets you close the detail pop-up by clicking outside of it.
+        detailModal.addEventListener('click', (e) => {
+            if (e.target === detailModal) {
+                closeDetailModal();
+            }
+        });
+        
+        // This part handles opening and closing the settings pop-up.
+        document.getElementById('settings-btn').addEventListener('click', () => settingsModal.classList.remove('hidden'));
+        document.getElementById('close-settings-btn').addEventListener('click', () => settingsModal.classList.add('hidden'));
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) settingsModal.classList.add('hidden');
+        });
+
+        // This part handles opening and closing the "Add Location" pop-up.
+        document.getElementById('add-location-btn').addEventListener('click', () => {
+            const center = map.getCenter();
+            document.getElementById('lat_long').value = `${center.lat}, ${center.lng}`;
+            addModal.classList.remove('hidden');
+        });
+        document.getElementById('close-add-btn').addEventListener('click', () => addModal.classList.add('hidden'));
+        addModal.addEventListener('click', (e) => {
+            if (e.target === addModal) addModal.classList.add('hidden');
+        });
+        
+        // This handles submitting the new location form to your Google Sheet.
+        addForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // IMPORTANT: Replace this with your actual Google Apps Script Web App URL
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpY5gQKheF--KuqtkzbEVt9v4fskaAmOkHhZBr0CEvRI-OJ3PyKTFFdZbcacJMG9X7/exec';
+
+            const formData = new FormData(addForm);
+            
+            // Provide user feedback during submission
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Submitting...`;
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.result === 'success') {
+                    showNotification('Thank you for your submission!', 'success');
+                    
+                    // Add new point to map dynamically
+                    const newLocationData = data.data;
+                    locationsData.push(newLocationData);
+                    plotMarkers();
+                    filterMarkers(document.querySelector('#map-legend .filter-active').dataset.filter);
+
+                    addModal.classList.add('hidden');
+                    addForm.reset();
+                } else {
+                    throw new Error(data.message || 'Unknown error occurred.');
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting form:', error);
+                showNotification('Submission failed. Please try again.', 'error');
+            })
+            .finally(() => {
+                // Restore button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Submit';
+            });
+        });
+
+        // Helper function to show notifications
+        function showNotification(message, type = 'success') {
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const notification = document.createElement('div');
+            notification.className = `fixed bottom-5 left-1/2 -translate-x-1/2 ${bgColor} text-white py-2 px-4 rounded-lg shadow-lg z-50`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 4000);
+        }
+
+        // This handles the light/dark mode toggle switch in the settings.
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeToggleIndicator = document.getElementById('theme-toggle-indicator');
+        const htmlEl = document.documentElement;
+
+        if (htmlEl.classList.contains('dark')) {
+            themeToggleIndicator.classList.add('translate-x-5');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            htmlEl.classList.toggle('dark');
+            if (htmlEl.classList.contains('dark')) {
+                themeToggleIndicator.classList.add('translate-x-5');
+            } else {
+                themeToggleIndicator.classList.remove('translate-x-5');
+            }
+        });
+    });
+    </script>
+</body>
+</html>
+
