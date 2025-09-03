@@ -112,6 +112,97 @@
         #map-legend > div[data-filter]:not(.filter-active):hover {
             opacity: 0.9;
         }
+
+        /* --- High Contrast & Larger Font Styles --- */
+        html.high-contrast {
+            font-size: 1.1rem; /* Larger base font size for readability */
+        }
+        
+        /* High contrast colors. Using !important to override Tailwind utilities. */
+        .high-contrast body,
+        .high-contrast .bg-white,
+        .high-contrast .dark\:bg-black,
+        .high-contrast .bg-white\/90,
+        .high-contrast .dark\:bg-gray-800\/90,
+        .high-contrast .dark\:bg-gray-800 {
+            background-color: #000000 !important;
+            color: #ffff00 !important; /* Yellow text on black background */
+        }
+
+        .high-contrast [class*="text-gray-"],
+        .high-contrast [class*="dark:text-gray-"],
+        .high-contrast [class*="text-yellow-"] {
+            color: #ffff00 !important;
+        }
+        
+        /* UI elements like buttons, modals, inputs */
+        .high-contrast .bg-gray-800\/80,
+        .high-contrast .dark\:bg-gray-800\/80,
+        .high-contrast .bg-gray-800\/50,
+        .high-contrast .dark\:bg-gray-900\/50,
+        .high-contrast .bg-yellow-100\/50,
+        .high-contrast .dark\:bg-yellow-900\/20,
+        .high-contrast .bg-indigo-600,
+        .high-contrast input,
+        .high-contrast textarea,
+        .high-contrast #detail-modal-content,
+        .high-contrast #info-modal > div,
+        .high-contrast #add-form {
+            background-color: #000000 !important;
+            border: 2px solid #ffff00 !important;
+            color: #ffff00 !important;
+        }
+
+        .high-contrast .text-white, .high-contrast .dark\:text-white {
+             color: #ffff00 !important;
+        }
+
+        /* Links and interactive elements */
+        .high-contrast a,
+        .high-contrast .text-indigo-500,
+        .high-contrast .dark\:text-indigo-400 {
+            color: #00ffff !important; /* Cyan for better visibility of links */
+            text-decoration: underline;
+        }
+        .high-contrast button {
+             color: #00ffff !important;
+             text-decoration: none;
+        }
+
+        .high-contrast .hover\:bg-indigo-700:hover {
+            background-color: #333333 !important;
+        }
+        
+        /* Borders */
+        .high-contrast [class*="border-"] {
+            border-color: #ffff00 !important;
+        }
+
+        /* Remove blur effects in high contrast for clarity */
+        .high-contrast .backdrop-blur-sm {
+            backdrop-filter: none !important;
+        }
+        
+        /* Map specific adjustments */
+        .high-contrast #map {
+            background-color: #000 !important;
+        }
+        .high-contrast .leaflet-tile-pane {
+            /* High contrast filter for map tiles */
+            filter: brightness(0.8) grayscale(1) contrast(5);
+        }
+        
+        /* Custom marker colors */
+        .high-contrast .custom-marker {
+            border-color: #ffff00 !important;
+        }
+        .high-contrast .bg-green-600 { background-color: #006400 !important; } /* Dark Green */
+        .high-contrast .bg-purple-600 { background-color: #4b0082 !important; } /* Indigo */
+        .high-contrast .bg-blue-600 { background-color: #00008b !important; } /* Dark Blue */
+        .high-contrast .bg-gray-500 { background-color: #808080 !important; } /* Gray */
+        .high-contrast .custom-marker span {
+            color: #ffffff !important; /* Keep icons white for contrast against dark markers */
+        }
     </style>
     <script>
       // Apply Tailwind dark mode
@@ -132,10 +223,13 @@
 
     <!-- UI Overlays -->
     
-    <!-- Theme Toggle Button -->
+    <!-- Control Buttons -->
     <div class="absolute top-4 right-4 z-20 flex flex-col gap-3">
         <button id="theme-toggle-btn" class="p-3 bg-gray-800/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg text-white" title="Toggle Light/Dark Mode">
              <span id="theme-icon" class="material-symbols-outlined">lightbulb</span>
+        </button>
+        <button id="contrast-toggle-btn" class="p-3 bg-gray-800/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg text-white" title="Toggle High Contrast Mode">
+             <span id="contrast-icon" class="material-symbols-outlined">contrast</span>
         </button>
     </div>
     
@@ -745,32 +839,50 @@
             setTimeout(() => notification.remove(), 4000);
         }
 
-        // This handles the light/dark mode toggle button in the top right.
-        const themeToggleBtn = document.getElementById('theme-toggle-btn');
-        const themeIcon = document.getElementById('theme-icon');
+        // --- THEME AND CONTRAST TOGGLES ---
         const htmlEl = document.documentElement;
 
-        // Set initial icon state based on the theme
+        // This handles the light/dark mode toggle button.
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        const themeIcon = document.getElementById('theme-icon');
+        
         function updateThemeIcon() {
             if (htmlEl.classList.contains('dark')) {
-                // In dark mode, show a "filled" lightbulb to indicate the theme is "on"
                 themeIcon.style.fontVariationSettings = "'FILL' 1";
                 themeToggleBtn.title = "Switch to Light Mode";
             } else {
-                 // In light mode, show an "outlined" lightbulb
                 themeIcon.style.fontVariationSettings = "'FILL' 0";
                 themeToggleBtn.title = "Switch to Dark Mode";
             }
         }
-
-        // Initialize icon state on page load
-        updateThemeIcon();
-
-        // Add click listener to toggle the theme and icon
+        
         themeToggleBtn.addEventListener('click', () => {
             htmlEl.classList.toggle('dark');
             updateThemeIcon();
         });
+
+        // This handles the high contrast mode toggle button.
+        const contrastToggleBtn = document.getElementById('contrast-toggle-btn');
+        const contrastIcon = document.getElementById('contrast-icon');
+
+        function updateContrastIcon() {
+            if (htmlEl.classList.contains('high-contrast')) {
+                contrastIcon.style.fontVariationSettings = "'FILL' 1"; // Filled icon
+                contrastToggleBtn.title = "Switch to Standard Contrast";
+            } else {
+                contrastIcon.style.fontVariationSettings = "'FILL' 0"; // Outlined icon
+                contrastToggleBtn.title = "Switch to High Contrast Mode";
+            }
+        }
+
+        contrastToggleBtn.addEventListener('click', () => {
+            htmlEl.classList.toggle('high-contrast');
+            updateContrastIcon();
+        });
+
+        // Initialize icons on page load
+        updateThemeIcon();
+        updateContrastIcon();
     });
     </script>
 </body>
