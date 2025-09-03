@@ -19,9 +19,21 @@
 
     <style>
         /* Base styles */
+        html {
+            background-color: #000000;
+            transition: background-color 0.3s ease;
+        }
+        html.dark {
+            background-color: #000000;
+        }
+        html:not(.dark) {
+            background-color: #ffffff;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             overscroll-behavior: none;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         /* Leaflet map container */
@@ -95,7 +107,7 @@
       }
     </script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 overflow-hidden">
+<body class="bg-white dark:bg-black text-gray-800 dark:text-gray-200 overflow-hidden">
 
     <!-- Map Container -->
     <div id="map"></div>
@@ -103,8 +115,16 @@
     <!-- UI Overlays -->
     <div class="absolute top-4 left-4 z-20 flex flex-col gap-3">
         <!-- Settings/Info Button -->
-        <button id="settings-btn" class="p-3 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg" title="Settings">
+        <button id="settings-btn" class="p-3 bg-gray-800/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg" title="Settings">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+        </button>
+    </div>
+    
+    <!-- Theme Toggle Button -->
+    <div class="absolute top-4 right-4 z-20 flex flex-col gap-3">
+        <button id="theme-toggle-btn" class="p-3 bg-gray-800/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg" title="Toggle Light/Dark Mode">
+            <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white hidden"><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="m4.22 4.22 1.42 1.42"/><path d="m18.36 18.36 1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="m4.22 19.78 1.42-1.42"/><path d="m18.36 5.64 1.42-1.42"/></svg>
+            <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
         </button>
     </div>
     
@@ -117,50 +137,41 @@
     <div id="map-legend" class="absolute bottom-20 right-4 z-20 bg-gray-800/80 backdrop-blur-sm text-white p-3 rounded-lg shadow-lg text-sm space-y-2">
         <div class="flex items-center gap-2 filter-active" data-filter="all">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>
-            <span>All</span>
+            <span>All Services</span>
         </div>
         <div class="flex items-center gap-2" data-filter="private">
             <span class="w-4 h-4 rounded-full bg-purple-600 border-2 border-white"></span>
-            <span>Private</span>
+            <span>Recommended</span>
         </div>
         <div class="flex items-center gap-2" data-filter="public">
             <span class="w-4 h-4 rounded-full bg-blue-600 border-2 border-white"></span>
-            <span>Public</span>
+            <span>Public Access</span>
         </div>
         <div class="flex items-center gap-2" data-filter="dubious">
             <span class="w-4 h-4 rounded-full bg-gray-500 border-2 border-white"></span>
-            <span>Dubious</span>
+            <span>Use Caution</span>
         </div>
     </div>
 
 
     <!-- Location Detail Modal -->
     <div id="detail-modal" class="hidden fixed inset-x-0 bottom-0 z-30 p-4">
-        <div id="detail-modal-content" class="bg-gray-800/80 backdrop-blur-sm text-white max-w-lg mx-auto rounded-xl shadow-2xl p-6 modal-enter">
+        <div id="detail-modal-content" class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm text-gray-800 dark:text-white max-w-lg mx-auto rounded-xl shadow-2xl p-6 modal-enter">
             <!-- Content will be injected by JavaScript -->
         </div>
     </div>
     
     <!-- Settings Modal -->
     <div id="settings-modal" class="hidden fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 text-white w-full max-w-sm rounded-xl shadow-2xl p-6 modal-enter">
+        <div class="bg-white dark:bg-gray-800 text-gray-800 dark:text-white w-full max-w-sm rounded-xl shadow-2xl p-6 modal-enter">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold">Eugene Access</h2>
-                <button id="close-settings-btn" class="text-gray-400 hover:text-white">&times;</button>
+                <button id="close-settings-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-white text-2xl">&times;</button>
             </div>
-            <p class="text-gray-400 mb-6 text-sm">An app to help people find essential services in downtown Eugene.</p>
+            <p class="text-gray-600 dark:text-gray-400 mb-6 text-sm">An app to help people find essential services in downtown Eugene.</p>
             
             <div class="space-y-4">
-                 <div class="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
-                    <div class="flex items-center gap-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="m4.22 4.22 1.42 1.42"/><path d="m18.36 18.36 1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="m4.22 19.78 1.42-1.42"/><path d="m18.36 5.64 1.42-1.42"/></svg>
-                        <span>Light Mode</span>
-                    </div>
-                    <button id="theme-toggle" class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors bg-gray-600">
-                        <span id="theme-toggle-indicator" class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform translate-x-1"></span>
-                    </button>
-                </div>
-                <div class="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg opacity-50 cursor-not-allowed">
+                <div class="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg opacity-50 cursor-not-allowed">
                     <div class="flex items-center gap-3">
                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
                         <span>Language</span>
@@ -174,61 +185,61 @@
     
      <!-- Add Location Modal -->
     <div id="add-modal" class="hidden fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4">
-        <form id="add-form" class="bg-gray-800 text-white w-full max-w-md rounded-xl shadow-2xl p-6 modal-enter overflow-y-auto max-h-[85vh]">
+        <form id="add-form" class="bg-white dark:bg-gray-800 text-gray-800 dark:text-white w-full max-w-md rounded-xl shadow-2xl p-6 modal-enter overflow-y-auto max-h-[85vh]">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold">Submit a Service</h2>
-                <button id="close-add-btn" type="button" class="text-gray-400 hover:text-white">&times;</button>
+                <button id="close-add-btn" type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-white text-2xl">&times;</button>
             </div>
             
             <div class="space-y-4">
                 <div>
-                    <label for="place_name" class="text-sm text-gray-400">Place Name</label>
-                    <input type="text" id="place_name" name="place_name" required class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                    <label for="place_name" class="text-sm text-gray-600 dark:text-gray-400">Business or Location Name</label>
+                    <input type="text" id="place_name" name="place_name" required class="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 dark:text-white">
                 </div>
                 <div>
-                    <label for="address" class="text-sm text-gray-400">Address or Cross-Streets</label>
-                    <input type="text" id="address" name="address" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                    <label for="address" class="text-sm text-gray-600 dark:text-gray-400">Address or Cross-Streets</label>
+                    <input type="text" id="address" name="address" class="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 dark:text-white">
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label for="tags" class="text-sm text-gray-400">Category (Tags)</label>
-                        <input type="text" id="tags" name="tags" placeholder="e.g., Toilet, Food" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                        <label for="tags" class="text-sm text-gray-600 dark:text-gray-400">Service Type</label>
+                        <input type="text" id="tags" name="tags" placeholder="e.g., Restroom, Food, WiFi" class="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 dark:text-white">
                     </div>
                     <div>
-                        <label for="privacy" class="text-sm text-gray-400">Privacy</label>
-                        <input type="text" id="privacy" name="privacy" placeholder="e.g., Public, Private" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                        <label for="privacy" class="text-sm text-gray-600 dark:text-gray-400">Privacy Level</label>
+                        <input type="text" id="privacy" name="privacy" placeholder="e.g., Public, Private" class="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 dark:text-white">
                     </div>
                     <div>
-                        <label for="access" class="text-sm text-gray-400">Access</label>
-                        <input type="text" id="access" name="access" placeholder="e.g., Free, Customers Only" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                        <label for="access" class="text-sm text-gray-600 dark:text-gray-400">Access Requirements</label>
+                        <input type="text" id="access" name="access" placeholder="e.g., Free, Purchase Required" class="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 dark:text-white">
                     </div>
                     <div>
-                        <label for="gendered" class="text-sm text-gray-400">Gendered</label>
-                        <input type="text" id="gendered" name="gendered" placeholder="e.g., All-Gender, Men's" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                        <label for="gendered" class="text-sm text-gray-600 dark:text-gray-400">Facility Type</label>
+                        <input type="text" id="gendered" name="gendered" placeholder="e.g., All-Gender, Men's, Women's" class="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 dark:text-white">
                     </div>
                 </div>
 
                 <div>
-                    <label for="hours" class="text-sm text-gray-400">Hours</label>
-                    <input type="text" id="hours" name="hours" placeholder="e.g., 9am-5pm, 24/7" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                    <label for="hours" class="text-sm text-gray-600 dark:text-gray-400">Operating Hours</label>
+                    <input type="text" id="hours" name="hours" placeholder="e.g., 9am-5pm, 24/7" class="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 dark:text-white">
                 </div>
                  <div>
-                    <label for="wifi_code" class="text-sm text-gray-400">WiFi Code</label>
-                    <input type="text" id="wifi_code" name="wifi_code" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                    <label for="wifi_code" class="text-sm text-gray-600 dark:text-gray-400">WiFi Password</label>
+                    <input type="text" id="wifi_code" name="wifi_code" class="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 dark:text-white">
                 </div>
                 <div>
-                    <label for="accessibility" class="text-sm text-gray-400">Accessibility Notes</label>
-                    <input type="text" id="accessibility" name="accessibility" placeholder="e.g., Wheelchair accessible ramp" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                    <label for="accessibility" class="text-sm text-gray-600 dark:text-gray-400">Accessibility Features</label>
+                    <input type="text" id="accessibility" name="accessibility" placeholder="e.g., Wheelchair accessible, Step-free entry" class="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 dark:text-white">
                 </div>
                 <div>
-                    <label for="notes" class="text-sm text-gray-400">Description / Notes</label>
-                    <textarea id="notes" name="notes" rows="3" class="w-full mt-1 p-2 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="e.g., Single stall restroom, ask staff for key..."></textarea>
+                    <label for="notes" class="text-sm text-gray-600 dark:text-gray-400">Additional Details</label>
+                    <textarea id="notes" name="notes" rows="3" class="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 dark:text-white" placeholder="e.g., Single stall restroom, ask staff for key, located on second floor..."></textarea>
                 </div>
 
                 <input type="hidden" id="lat_long" name="lat_long">
                 <p class="text-xs text-gray-500 pt-2">Your current map location will be submitted with the form.</p>
-                <button type="submit" id="submit-btn" class="w-full p-3 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center">Submit</button>
+                <button type="submit" id="submit-btn" class="w-full p-3 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center text-white">Submit</button>
             </div>
         </form>
     </div>
@@ -275,8 +286,18 @@
         let locationsData = [];
         let allMarkers = []; // To hold all marker instances for filtering
         
-        // This part creates the colored map pins.
-        const bathroomIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z"/><path d="M12 12a4.5 4.5 0 0 0-4.5 4.5c0 2.06 1.94 3.5 4.5 3.5s4.5-1.44 4.5-3.5A4.5 4.5 0 0 0 12 12Z"/><path d="M14 12c0-1.66-1.57-3-3.5-3S7 10.34 7 12"/><path d="M17.5 9.5c0-2.2-2.02-4-4.5-4s-4.5 1.8-4.5 4"/></svg>`;
+        // This part creates the colored map pins with appropriate icons.
+        const createIcon = (tags) => {
+            const tagsLower = tags ? tags.toLowerCase() : '';
+            
+            // Use fork icon for food-related services
+            if (tagsLower.includes('food') || tagsLower.includes('restaurant') || tagsLower.includes('cafe') || tagsLower.includes('eat')) {
+                return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg>`;
+            }
+            
+            // Default toilet icon for restrooms and other services
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z"/><path d="M12 12a4.5 4.5 0 0 0-4.5 4.5c0 2.06 1.94 3.5 4.5 3.5s4.5-1.44 4.5-3.5A4.5 4.5 0 0 0 12 12Z"/><path d="M14 12c0-1.66-1.57-3-3.5-3S7 10.34 7 12"/><path d="M17.5 9.5c0-2.2-2.02-4-4.5-4s-4.5 1.8-4.5 4"/></svg>`;
+        };
         
         // It decides what color the pin should be based on the "Privacy" and "Tags" columns from your sheet.
         const createCustomIcon = (privacy, tags) => {
@@ -285,12 +306,13 @@
             const tagsLower = tags ? tags.toLowerCase() : '';
 
             if (tagsLower.includes('dubious')) {
-                bgColorClass = 'bg-gray-500'; // Gray for "Dubious"
+                bgColorClass = 'bg-gray-500'; // Gray for "Use Caution"
             } else if (privacyLower === 'public' || privacyLower === 'exposed') {
-                bgColorClass = 'bg-blue-600'; // Blue for "Fine"
+                bgColorClass = 'bg-blue-600'; // Blue for "Public Access"
             }
             
-            const iconHtml = `<div class="custom-marker ${bgColorClass}">${bathroomIconSvg}</div>`;
+            const iconSvg = createIcon(tags);
+            const iconHtml = `<div class="custom-marker ${bgColorClass}">${iconSvg}</div>`;
             return L.divIcon({
                 className: '',
                 html: iconHtml,
@@ -398,7 +420,7 @@
                         const coords = coordStr.split(',');
                         lat = parseFloat(coords[0].trim());
                         long = parseFloat(coords[1].trim());
-                    } else if (coordStr.includes(' ') && !coordStr.includes('°')) {
+                    } else if (coordStr.includes(' ') && !coordStr.includes('Â°')) {
                         const coords = coordStr.split(' ');
                         lat = parseFloat(coords[0].trim());
                         long = parseFloat(coords[1].trim());
@@ -476,19 +498,19 @@
             
             // It dynamically adds list items for each piece of info from the sheet (Access, Privacy, etc.).
             if (loc['Access']) {
-                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400 mt-1 flex-shrink-0"><polyline points="20 6 9 17 4 12"></polyline></svg><div><span class="font-semibold">Access: ${loc['Access']}</span></div></li>`;
+                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400 mt-1 flex-shrink-0"><polyline points="20 6 9 17 4 12"></polyline></svg><div><span class="font-semibold">Access Requirements: ${loc['Access']}</span></div></li>`;
             }
             if (loc['Privacy']) {
-                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400 mt-1 flex-shrink-0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg><div><span class="font-semibold">Privacy: ${loc['Privacy']}</span></div></li>`;
+                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400 mt-1 flex-shrink-0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg><div><span class="font-semibold">Privacy Level: ${loc['Privacy']}</span></div></li>`;
             }
             if (loc['Gendered']) {
-                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-pink-400 mt-1 flex-shrink-0"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><div><span class="font-semibold">Type: ${loc['Gendered']}</span></div></li>`;
+                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-pink-400 mt-1 flex-shrink-0"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><div><span class="font-semibold">Facility Type: ${loc['Gendered']}</span></div></li>`;
             }
             if (loc['WiFi Code']) {
-                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400 mt-1 flex-shrink-0"><path d="M5 13a10 10 0 0 1 14 0"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M12 20h.01"/></svg><div><span class="font-semibold">WiFi Available</span><p class="text-sm text-gray-400">Code: ${loc['WiFi Code']}</p></div></li>`;
+                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400 mt-1 flex-shrink-0"><path d="M5 13a10 10 0 0 1 14 0"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M12 20h.01"/></svg><div><span class="font-semibold">WiFi Available</span><p class="text-sm text-gray-400">Password: ${loc['WiFi Code']}</p></div></li>`;
             }
             if (loc['Hours']) {
-                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-400 mt-1 flex-shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg><div><span class="font-semibold">Hours: ${loc['Hours']}</span></div></li>`;
+                servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-400 mt-1 flex-shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg><div><span class="font-semibold">Operating Hours: ${loc['Hours']}</span></div></li>`;
             }
             if (loc['Accessibility']) {
                 servicesHtml += `<li class="flex items-start gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-orange-400 mt-1 flex-shrink-0"><circle cx="12" cy="4" r="2"/><path d="m10.5 20 6-2V8a1 1 0 0 0-1-1H8.5a1 1 0 0 0-1 1v8.5"/><path d="M7 15a6.5 6.5 0 0 0 5 0"/></svg><div><span class="font-semibold">Accessibility: ${loc['Accessibility']}</span></div></li>`;
@@ -499,14 +521,14 @@
                 <div class="flex justify-between items-start">
                     <div>
                         <h3 class="text-2xl font-bold">${loc['Location'] || 'Unknown Location'}</h3>
-                        <p class="text-gray-400 text-sm">${loc['address'] || 'Address not available'}</p>
-                        ${loc['Tags'] ? `<span class="inline-block mt-2 px-2 py-1 bg-gray-700 text-xs rounded-full">${loc['Tags']}</span>` : ''}
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">${loc['address'] || 'Address not available'}</p>
+                        ${loc['Tags'] ? `<span class="inline-block mt-2 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-xs rounded-full">${loc['Tags']}</span>` : ''}
                     </div>
-                     <button id="close-detail-btn" class="text-gray-400 text-2xl leading-none hover:text-white">&times;</button>
+                     <button id="close-detail-btn" class="text-gray-400 text-2xl leading-none hover:text-gray-600 dark:hover:text-white">&times;</button>
                 </div>
-                ${loc['Notes'] ? `<p class="mt-4 text-gray-300">${loc['Notes']}</p>` : ''}
-                <div class="mt-4 pt-4 border-t border-gray-700">
-                    <h4 class="font-semibold mb-2">Available Services</h4>
+                ${loc['Notes'] ? `<p class="mt-4 text-gray-700 dark:text-gray-300">${loc['Notes']}</p>` : ''}
+                <div class="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700">
+                    <h4 class="font-semibold mb-2">Available Information</h4>
                     <ul class="space-y-2">${servicesHtml}</ul>
                 </div>
             `;
@@ -610,22 +632,29 @@
             setTimeout(() => notification.remove(), 4000);
         }
 
-        // This handles the light/dark mode toggle switch in the settings.
-        const themeToggle = document.getElementById('theme-toggle');
-        const themeToggleIndicator = document.getElementById('theme-toggle-indicator');
+        // This handles the light/dark mode toggle button in the top right.
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        const lightIcon = document.getElementById('light-icon');
+        const darkIcon = document.getElementById('dark-icon');
         const htmlEl = document.documentElement;
 
-        if (htmlEl.classList.contains('dark')) {
-            themeToggleIndicator.classList.add('translate-x-5');
+        // Set initial icon state
+        function updateThemeIcon() {
+            if (htmlEl.classList.contains('dark')) {
+                lightIcon.classList.remove('hidden');
+                darkIcon.classList.add('hidden');
+            } else {
+                lightIcon.classList.add('hidden');
+                darkIcon.classList.remove('hidden');
+            }
         }
 
-        themeToggle.addEventListener('click', () => {
+        // Initialize icon state
+        updateThemeIcon();
+
+        themeToggleBtn.addEventListener('click', () => {
             htmlEl.classList.toggle('dark');
-            if (htmlEl.classList.contains('dark')) {
-                themeToggleIndicator.classList.add('translate-x-5');
-            } else {
-                themeToggleIndicator.classList.remove('translate-x-5');
-            }
+            updateThemeIcon();
         });
     });
     </script>
