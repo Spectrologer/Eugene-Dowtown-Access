@@ -1,10 +1,12 @@
 // A name for the cache storage.
-const CACHE_NAME = 'eugene-access-cache-v1';
+const CACHE_NAME = 'eugene-access-cache-v2'; // Incremented cache version
 
 // A list of essential files to be cached when the service worker is installed.
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
+  '/style.css',
+  '/script.js',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -56,10 +58,19 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For requests to external resources like map tiles and the Google Sheet,
-  // we use a "network falling back to cache" strategy. This ensures users
-  // get the latest data when they are online.
-  if (event.request.url.startsWith('http')) {
+  const requestUrl = new URL(event.request.url);
+
+  // --- STRATEGY: Network Only for Google Sheets ---
+  // Always go to the network for Google Sheet data to ensure freshness.
+  // This prevents caching of bad responses (like login page redirects).
+  if (requestUrl.hostname === 'docs.google.com') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // --- STRATEGY: Network falling back to cache for other external resources ---
+  // For things like map tiles, try the network first.
+  if (requestUrl.protocol.startsWith('http')) {
     event.respondWith(
       fetch(event.request)
         .then(response => {
@@ -78,7 +89,7 @@ self.addEventListener('fetch', event => {
         })
     );
   } else {
-    // For local assets, we use a "cache first" strategy.
+    // --- STRATEGY: Cache first for local assets ---
     event.respondWith(
       caches.match(event.request)
         .then(response => {
