@@ -150,7 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch(BLOCKLIST_CSV_URL);
+            // Added cache-busting parameter
+            const response = await fetch(BLOCKLIST_CSV_URL + '&cb=' + new Date().getTime());
             if (!response.ok) {
                 console.warn(`Failed to fetch blocklist from Google Sheet: ${response.statusText}`);
                 return new Set();
@@ -240,7 +241,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const blocklist = await fetchBlocklist(); // Fetch the blocklist first
 
         const [sheetResult, apiResult] = await Promise.allSettled([
-            fetch(CSV_URL).then(res => {
+            // Added cache-busting parameter to the main CSV URL fetch
+            fetch(CSV_URL + '&cb=' + new Date().getTime()).then(res => {
                 if (!res.ok) throw new Error('Network response for sheet was not ok');
                 return res.text();
             }),
@@ -700,4 +702,3 @@ document.addEventListener('DOMContentLoaded', () => {
     updateApiToggleUI();
     setupFiltering();
 });
-
