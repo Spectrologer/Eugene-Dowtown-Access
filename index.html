@@ -13,8 +13,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Leaflet.js for Maps -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha2-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha2-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -113,6 +113,28 @@
             opacity: 0.9;
         }
 
+        /* --- Rolodex List View Styles --- */
+        #rolodex-cards-container::-webkit-scrollbar {
+            width: 4px;
+        }
+        #rolodex-cards-container::-webkit-scrollbar-thumb {
+            background-color: #4a5568; /* gray-600 */
+            border-radius: 4px;
+        }
+        #rolodex-cards-container::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
+        .rolodex-card {
+            opacity: 0;
+            transform: translateX(20px);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out, background-color 0.2s ease-in-out;
+        }
+        /* This class is added via JS to trigger the transition */
+        #rolodex-view.visible .rolodex-card {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
         /* --- High Contrast & Larger Font Styles --- */
         html.high-contrast {
             font-size: 1.1rem; /* Larger base font size for readability */
@@ -147,7 +169,8 @@
         .high-contrast textarea,
         .high-contrast #detail-modal-content,
         .high-contrast #info-modal > div,
-        .high-contrast #add-form {
+        .high-contrast #add-form,
+        .high-contrast #rolodex-view {
             background-color: #000000 !important;
             border: 2px solid #ffff00 !important;
             color: #ffff00 !important;
@@ -179,7 +202,8 @@
         }
 
         /* Remove blur effects in high contrast for clarity */
-        .high-contrast .backdrop-blur-sm {
+        .high-contrast .backdrop-blur-sm,
+        .high-contrast .backdrop-blur-md {
             backdrop-filter: none !important;
         }
         
@@ -245,27 +269,43 @@
         <span class="material-symbols-outlined text-3xl">add</span>
     </button>
 
-    <!-- Map Legend -->
-    <div id="map-legend" class="absolute bottom-20 right-4 z-20 bg-gray-800/80 backdrop-blur-sm text-white p-3 rounded-lg shadow-lg text-sm space-y-2">
-        <div class="flex items-center gap-2 filter-active" data-filter="all">
-            <span class="material-symbols-outlined">filter_list</span>
-            <span>All Services</span>
+    <!-- Legend & List View Container -->
+    <div class="absolute bottom-20 right-4 z-20 flex flex-col items-end gap-2">
+        <!-- List View Toggle -->
+        <button id="list-view-toggle" class="order-1 p-3 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg text-white transition-colors" title="Toggle List View">
+            <span class="material-symbols-outlined">view_list</span>
+        </button>
+    
+        <!-- Rolodex/List View (hidden by default) -->
+        <div id="rolodex-view" class="order-2 hidden w-72 h-96 bg-gray-900/90 backdrop-blur-md rounded-lg shadow-2xl flex flex-col">
+            <h3 class="p-3 text-sm font-semibold text-gray-300 border-b border-gray-700/50 flex-shrink-0">Locations</h3>
+            <div id="rolodex-cards-container" class="flex-grow p-3 overflow-y-auto space-y-2">
+                <!-- Location cards will be dynamically inserted here by JavaScript -->
+            </div>
         </div>
-        <div class="flex items-center gap-2" data-filter="food">
-            <span class="w-4 h-4 rounded-full bg-green-600 border-2 border-white"></span>
-            <span>Food</span>
-        </div>
-        <div class="flex items-center gap-2" data-filter="private">
-            <span class="w-4 h-4 rounded-full bg-purple-600 border-2 border-white"></span>
-            <span>Private Stalls</span>
-        </div>
-        <div class="flex items-center gap-2" data-filter="public">
-            <span class="w-4 h-4 rounded-full bg-blue-600 border-2 border-white"></span>
-            <span>Multi-Stall</span>
-        </div>
-        <div class="flex items-center gap-2" data-filter="dubious">
-            <span class="w-4 h-4 rounded-full bg-gray-500 border-2 border-white"></span>
-            <span>Dubious</span>
+        
+        <!-- Map Legend -->
+        <div id="map-legend" class="order-2 bg-gray-800/80 backdrop-blur-sm text-white p-3 rounded-lg shadow-lg text-sm space-y-2">
+            <div class="flex items-center gap-2 filter-active" data-filter="all">
+                <span class="material-symbols-outlined">filter_list</span>
+                <span>All Services</span>
+            </div>
+            <div class="flex items-center gap-2" data-filter="food">
+                <span class="w-4 h-4 rounded-full bg-green-600 border-2 border-white"></span>
+                <span>Food</span>
+            </div>
+            <div class="flex items-center gap-2" data-filter="private">
+                <span class="w-4 h-4 rounded-full bg-purple-600 border-2 border-white"></span>
+                <span>Private Stalls</span>
+            </div>
+            <div class="flex items-center gap-2" data-filter="public">
+                <span class="w-4 h-4 rounded-full bg-blue-600 border-2 border-white"></span>
+                <span>Multi-Stall</span>
+            </div>
+            <div class="flex items-center gap-2" data-filter="dubious">
+                <span class="w-4 h-4 rounded-full bg-gray-500 border-2 border-white"></span>
+                <span>Dubious</span>
+            </div>
         </div>
     </div>
 
@@ -359,7 +399,6 @@
 
     <script>
     // --- SERVICE WORKER REGISTRATION ---
-    // This script checks if the browser supports service workers and registers our file.
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/service-worker.js')
@@ -372,7 +411,6 @@
         });
     }
     
-    // This whole script runs after the webpage has finished loading.
     document.addEventListener('DOMContentLoaded', () => {
         
         // Sets up the initial map view centered on Eugene.
@@ -391,42 +429,57 @@
             map.panInsideBounds(bounds, { animate: false });
         });
 
-        // This adds the actual map tiles (the streets, buildings, etc.) from OpenStreetMap.
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
-        // Adds the + and - zoom buttons to the bottom right of the map.
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // Grabs all the interactive pop-up windows (modals) from the HTML so we can show/hide them later.
+        // Close the detail modal when clicking on the map
+        map.on('click', () => {
+            if (!detailModal.classList.contains('hidden')) {
+                closeDetailModal();
+            }
+        });
+
+        // --- DOM ELEMENT SELECTORS ---
         const detailModal = document.getElementById('detail-modal');
         const detailModalContent = document.getElementById('detail-modal-content');
         const infoModal = document.getElementById('info-modal');
         const addModal = document.getElementById('add-modal');
         const addForm = document.getElementById('add-form');
         const submitBtn = document.getElementById('submit-btn');
+        const listViewToggle = document.getElementById('list-view-toggle');
+        const rolodexView = document.getElementById('rolodex-view');
+        const legend = document.getElementById('map-legend');
+        const rolodexCardsContainer = document.getElementById('rolodex-cards-container');
 
-        // This will hold all the location data once we fetch it from the Google Sheet.
+        // --- GLOBAL STATE ---
         let locationsData = [];
         let allMarkers = []; // To hold all marker instances for filtering
         
-        // This part creates the colored map pins with appropriate icons.
-        const createIcon = (tags) => {
+        // --- ICON & MARKER CREATION ---
+        
+        // This part creates the icon content (e.g., restroom or food icon).
+        const createIcon = (tags, privacy) => {
             const tagsLower = tags ? tags.toLowerCase() : '';
-            let iconName = 'wc'; // Default icon
-            
-            // Use restaurant icon for food-related services
+            const privacyLower = privacy ? privacy.toLowerCase() : '';
+            let iconName = 'woman'; // Default to private stall (woman icon)
+
             if (tagsLower.includes('food') || tagsLower.includes('restaurant') || tagsLower.includes('cafe') || tagsLower.includes('eat')) {
                 iconName = 'restaurant';
+            } else if (tagsLower.includes('dubious')) {
+                iconName = 'gpp_maybe';
+            } else if (privacyLower === 'public' || privacyLower === 'exposed') {
+                iconName = 'wc'; // Multi-stall
             }
             
             return `<span class="material-symbols-outlined text-white text-lg">${iconName}</span>`;
         };
         
-        // It decides what color the pin should be based on the "Privacy" and "Tags" columns from your sheet.
-        const createCustomIcon = (privacy, tags) => {
+        // Helper to get background color class, avoids duplicating logic from createCustomIcon
+        function getBgColorClass(privacy, tags) {
             let bgColorClass = 'bg-purple-600'; // Default is purple for "Recommended"
             const privacyLower = privacy ? privacy.toLowerCase() : '';
             const tagsLower = tags ? tags.toLowerCase() : '';
@@ -438,8 +491,13 @@
             } else if (privacyLower === 'public' || privacyLower === 'exposed') {
                 bgColorClass = 'bg-blue-600'; // Blue for "Public Access"
             }
-            
-            const iconContent = createIcon(tags);
+            return bgColorClass;
+        }
+
+        // It decides what color the pin should be based on the "Privacy" and "Tags" columns from your sheet.
+        const createCustomIcon = (privacy, tags) => {
+            const bgColorClass = getBgColorClass(privacy, tags);
+            const iconContent = createIcon(tags, privacy);
             const iconHtml = `<div class="custom-marker ${bgColorClass}">${iconContent}</div>`;
             return L.divIcon({
                 className: '',
@@ -449,28 +507,19 @@
             });
         };
 
-        // This is where the app grabs the data from your public Google Sheet.
+        // --- DATA FETCHING & PROCESSING ---
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRMzAQbd3MdmdliQnNSPgFvX2309klOt524-HuUoojAc2c2kLKwG9Ftr75YUhsXzMfJtpFerLGlmQOK/pub?gid=0&single=true&output=csv';
         const lastUpdatedContainer = document.getElementById('last-updated-container').querySelector('span');
 
         fetch(CSV_URL)
             .then(response => {
-                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
+                 if (!response.ok) { throw new Error('Network response was not ok'); }
                 const now = new Date();
-                const formattedDate = now.toLocaleString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric', 
-                    hour: 'numeric', 
-                    minute: '2-digit',
-                    hour12: true
-                });
+                const formattedDate = now.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
                 lastUpdatedContainer.textContent = `Updated: ${formattedDate}`;
                 return response.text();
             })
             .then(csvText => {
-                // Once the data is fetched, it gets parsed and then the markers are plotted.
                 locationsData = parseCSV(csvText);
                 plotMarkers();
                 setupFiltering();
@@ -478,18 +527,15 @@
             .catch(error => {
                 console.error("Error fetching or parsing sheet data:", error);
                 lastUpdatedContainer.textContent = 'Using Offline Data';
-                // Attempt to show a notification to the user
                 showNotification('Could not load map data. Showing cached data if available.', 'error');
             });
 
         // This function takes the raw text from the Google Sheet and turns it into a structured list of locations.
-        // It is robust enough to handle newlines inside quoted fields.
         function parseCSV(text) {
             let lines = text.trim().split('\n');
             let headerRowIndex = -1;
             let headers = [];
 
-            // Find the header row
             for (let i = 0; i < lines.length; i++) {
                 if (lines[i].includes('Location') && lines[i].includes('Privacy')) {
                     headerRowIndex = i;
@@ -498,69 +544,42 @@
                 }
             }
 
-            if (headerRowIndex === -1) {
-                console.error("Header row not found.");
-                return [];
-            }
+            if (headerRowIndex === -1) { console.error("Header row not found."); return []; }
             
-            // Join lines back and start processing from after the header
             let csvContent = lines.slice(headerRowIndex + 1).join('\n');
-            
             const result = [];
-            let inQuotes = false;
-            let field = '';
-            let record = {};
-            let headerIndex = 0;
+            let inQuotes = false, field = '', record = {}, headerIndex = 0;
 
             for (let i = 0; i < csvContent.length; i++) {
                 const char = csvContent[i];
-
-                if (char === '"') {
-                    inQuotes = !inQuotes;
-                } else if (char === ',' && !inQuotes) {
+                if (char === '"') { inQuotes = !inQuotes; } 
+                else if (char === ',' && !inQuotes) {
                     record[headers[headerIndex]] = field.trim();
                     field = '';
                     headerIndex++;
                 } else if (char === '\n' && !inQuotes) {
                     record[headers[headerIndex]] = field.trim();
-                    if (Object.keys(record).length === headers.length && record['Location']) {
-                         result.push(record);
-                    }
-                    record = {};
-                    field = '';
-                    headerIndex = 0;
-                } else {
-                    field += char;
-                }
+                    if (Object.keys(record).length === headers.length && record['Location']) { result.push(record); }
+                    record = {}; field = ''; headerIndex = 0;
+                } else { field += char; }
             }
-
-            // Add the last record if file doesn't end with a newline
             if (headerIndex < headers.length) {
                  record[headers[headerIndex]] = field.trim();
-                 if (Object.keys(record).length === headers.length && record['Location']) {
-                    result.push(record);
-                }
+                 if (Object.keys(record).length === headers.length && record['Location']) { result.push(record); }
             }
-            
             return result.filter(row => row && row['Location'] && row['Location'].trim());
         }
-
+        
+        // --- MAP & UI LOGIC ---
         
         // This function takes the location data and puts a pin on the map for each one.
         function plotMarkers() {
-            // Clear existing markers before plotting new ones
             allMarkers.forEach(marker => map.removeLayer(marker));
             allMarkers = [];
-
-            if (locationsData.length === 0) {
-                console.error('No location data to plot!');
-                return;
-            }
+            if (locationsData.length === 0) { console.error('No location data to plot!'); return; }
             
             locationsData.forEach((loc) => {
                 let lat, long;
-                
-                // It tries to read the coordinates from the "Lat_Long" column.
                 if (loc['Lat_Long']) {
                     const coordStr = loc['Lat_Long'].trim();
                     if (coordStr.includes(',')) {
@@ -573,37 +592,29 @@
                         long = parseFloat(coords[1].trim());
                     }
                 }
-    
-                // If the coordinates are valid, it creates a marker and adds it to the map.
                 if (!isNaN(lat) && !isNaN(long) && lat !== 0 && long !== 0) {
                     try {
                         const marker = L.marker([lat, long], { icon: createCustomIcon(loc['Privacy'], loc['Tags']) });
-                        marker.locationData = loc; // Attach data for filtering
-                        marker.on('click', () => showLocationDetail(loc));
+                        marker.locationData = loc;
+                        marker.on('click', (e) => {
+                            L.DomEvent.stopPropagation(e); // Prevent map click from closing the modal
+                            showLocationDetail(loc);
+                        });
                         marker.addTo(map);
                         allMarkers.push(marker);
-                    } catch (error) {
-                        console.error('Error adding marker:', error);
-                    }
-                } else {
-                    console.warn(`Skipping ${loc['Location']} - invalid coordinates.`);
-                }
+                    } catch (error) { console.error('Error adding marker:', error); }
+                } else { console.warn(`Skipping ${loc['Location']} - invalid coordinates.`); }
             });
         }
         
         // Sets up the click listeners and logic for filtering markers from the legend.
         function setupFiltering() {
             const legendItems = document.querySelectorAll('#map-legend > div[data-filter]');
-            
             legendItems.forEach(item => {
                 item.addEventListener('click', () => {
                     const activeFilter = item.dataset.filter;
-                    
-                    // Update active style in legend
                     legendItems.forEach(i => i.classList.remove('filter-active'));
                     item.classList.add('filter-active');
-                    
-                    // Filter markers on the map
                     filterMarkers(activeFilter);
                 });
             });
@@ -617,52 +628,65 @@
                 const tagsLower = loc['Tags'] ? loc['Tags'].toLowerCase() : '';
                 let show = false;
 
-                if (activeFilter === 'all') {
-                    show = true;
-                } else if (activeFilter === 'food') {
-                    if (tagsLower.includes('food') || tagsLower.includes('restaurant') || tagsLower.includes('cafe') || tagsLower.includes('eat')) show = true;
-                } else if (activeFilter === 'dubious') {
-                    if (tagsLower.includes('dubious')) show = true;
-                } else if (activeFilter === 'public') {
-                    if (!tagsLower.includes('dubious') && (privacyLower === 'public' || privacyLower === 'exposed')) {
-                        show = true;
-                    }
-                } else if (activeFilter === 'private') {
-                     if (!tagsLower.includes('dubious') && !tagsLower.includes('food') && !tagsLower.includes('restaurant') && !tagsLower.includes('cafe') && !tagsLower.includes('eat') && privacyLower !== 'public' && privacyLower !== 'exposed') {
-                        show = true;
-                    }
-                }
+                if (activeFilter === 'all') { show = true; } 
+                else if (activeFilter === 'food') { if (tagsLower.includes('food') || tagsLower.includes('restaurant') || tagsLower.includes('cafe') || tagsLower.includes('eat')) show = true; } 
+                else if (activeFilter === 'dubious') { if (tagsLower.includes('dubious')) show = true; } 
+                else if (activeFilter === 'public') { if (!tagsLower.includes('dubious') && (privacyLower === 'public' || privacyLower === 'exposed')) show = true; } 
+                else if (activeFilter === 'private') { if (!tagsLower.includes('dubious') && !tagsLower.includes('food') && !tagsLower.includes('restaurant') && !tagsLower.includes('cafe') && !tagsLower.includes('eat') && privacyLower !== 'public' && privacyLower !== 'exposed') show = true; }
                 
-                if (show) {
-                    if (!map.hasLayer(marker)) map.addLayer(marker);
-                } else {
-                    if (map.hasLayer(marker)) map.removeLayer(marker);
-                }
+                if (show) { if (!map.hasLayer(marker)) map.addLayer(marker); } 
+                else { if (map.hasLayer(marker)) map.removeLayer(marker); }
             });
         }
+        
+        // --- ROLODEX / LIST VIEW ---
+        
+        // This function populates the rolodex list view with location cards.
+        function populateRolodex() {
+            rolodexCardsContainer.innerHTML = ''; // Clear previous
+            if (!locationsData || locationsData.length === 0) {
+                rolodexCardsContainer.innerHTML = '<p class="text-center text-gray-400 text-sm p-4">No locations loaded.</p>';
+                return;
+            }
+            const fragment = document.createDocumentFragment();
+            locationsData.forEach((loc, index) => {
+                const latLong = loc['Lat_Long'];
+                if (!latLong || !latLong.includes(',')) return; // Skip if no valid coords
+
+                const card = document.createElement('div');
+                card.className = 'rolodex-card flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg cursor-pointer hover:bg-indigo-500/30';
+                card.style.transitionDelay = `${index * 40}ms`; // Stagger the animation
+                
+                card.addEventListener('click', () => {
+                    const coords = latLong.split(',').map(c => parseFloat(c.trim()));
+                    if (!isNaN(coords[0]) && !isNaN(coords[1])) {
+                        map.flyTo([coords[0], coords[1]], 17); // Zoom in closer
+                        showLocationDetail(loc);
+                    }
+                });
+                
+                const iconHTML = `<div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getBgColorClass(loc['Privacy'], loc['Tags'])} border-2 border-white/50">${createIcon(loc['Tags'], loc['Privacy'])}</div>`;
+                const infoHTML = `<div class="flex-grow overflow-hidden"><h4 class="font-semibold text-white text-sm truncate">${loc['Location']}</h4><p class="text-gray-400 text-xs truncate">${loc['Address'] || 'No address'}</p></div>`;
+                card.innerHTML = iconHTML + infoHTML;
+                fragment.appendChild(card);
+            });
+            rolodexCardsContainer.appendChild(fragment);
+        }
+
+        // --- MODAL & DETAIL VIEW LOGIC ---
 
         // This function builds the HTML for the location detail pop-up when you click a pin.
         function showLocationDetail(loc) {
             let servicesHtml = '';
-            
-            // It dynamically adds list items for each piece of info from the sheet (Access, Privacy, etc.).
-            if (loc['Access'] && loc['Access'].toLowerCase().trim() !== 'open') {
-                servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-green-400 mt-1 flex-shrink-0">check_circle</span><div><span class="font-semibold">Access Requirements: ${loc['Access']}</span></div></li>`;
-            }
+            if (loc['Access'] && loc['Access'].toLowerCase().trim() !== 'open') { servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-green-400 mt-1 flex-shrink-0">check_circle</span><div><span class="font-semibold">Access Requirements: ${loc['Access']}</span></div></li>`; }
             if (loc['Privacy']) {
                 const privacyLower = loc['Privacy'].toLowerCase();
                 let privacyText = 'Private Stall';
-                if (privacyLower === 'public' || privacyLower === 'exposed') {
-                    privacyText = 'Multi Stall';
-                }
+                if (privacyLower === 'public' || privacyLower === 'exposed') { privacyText = 'Multi Stall'; }
                 servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-blue-400 mt-1 flex-shrink-0">shield</span><div><span class="font-semibold">${privacyText}</span></div></li>`;
             }
-            if (loc['Gendered']) {
-                servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-pink-400 mt-1 flex-shrink-0">wc</span><div><span class="font-semibold">Bathroom Type: ${loc['Gendered']}</span></div></li>`;
-            }
-            if (loc['WiFi Code']) {
-                servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-purple-400 mt-1 flex-shrink-0">wifi</span><div><span class="font-semibold">WiFi Available</span><p class="text-sm text-gray-400">Password: ${loc['WiFi Code']}</p></div></li>`;
-            }
+            if (loc['Gendered']) { servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-pink-400 mt-1 flex-shrink-0">wc</span><div><span class="font-semibold">Bathroom Type: ${loc['Gendered']}</span></div></li>`; }
+            if (loc['WiFi Code']) { servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-purple-400 mt-1 flex-shrink-0">wifi</span><div><span class="font-semibold">WiFi Available</span><p class="text-sm text-gray-400">Password: ${loc['WiFi Code']}</p></div></li>`; }
             if (loc['Hours']) {
                 const formattedHours = loc['Hours'].replace(/;/g, '<br>');
                 servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-yellow-400 mt-1 flex-shrink-0">schedule</span><div><span class="font-semibold">Operating Hours:</span><p class="text-sm text-gray-400 dark:text-gray-300">${formattedHours}</p></div></li>`;
@@ -670,41 +694,20 @@
             if (loc['Accessibility'] && loc['Accessibility'].trim() !== '') {
                 const accessibilityLower = loc['Accessibility'].toLowerCase();
                 const isAccessible = accessibilityLower.includes('accessible') || accessibilityLower.includes('wheelchair') || accessibilityLower.includes('step-free');
-                
-                if (isAccessible) {
-                     servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-orange-400 mt-1 flex-shrink-0">accessible</span><div><span class="font-semibold">Accessible</span></div></li>`;
-                } else {
-                     servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-gray-500 mt-1 flex-shrink-0">block</span><div><span class="font-semibold">Not Accessible</span></div></li>`;
-                }
+                if (isAccessible) { servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-orange-400 mt-1 flex-shrink-0">accessible</span><div><span class="font-semibold">Accessible</span></div></li>`; } 
+                else { servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-gray-500 mt-1 flex-shrink-0">block</span><div><span class="font-semibold">Not Accessible</span></div></li>`; }
             }
 
-            let infoSectionHtml;
-            if (servicesHtml) {
-                infoSectionHtml = `
-                    <div class="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700">
-                        <h4 class="font-semibold mb-2">Available Information</h4>
-                        <ul class="space-y-2">${servicesHtml}</ul>
-                    </div>
-                `;
-            } else {
-                infoSectionHtml = `
-                    <div class="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700 text-center">
-                        <p class="text-gray-500 dark:text-gray-400">No available information.</p>
-                        <button id="add-info-btn" class="mt-2 text-indigo-500 hover:text-indigo-400 text-sm font-semibold">Add Information</button>
-                    </div>
-                `;
-            }
+            let infoSectionHtml = servicesHtml ? `<div class="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700"><h4 class="font-semibold mb-2">Available Information</h4><ul class="space-y-2">${servicesHtml}</ul></div>`
+                : `<div class="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700 text-center"><p class="text-gray-500 dark:text-gray-400">No available information.</p><button id="add-info-btn" class="mt-2 text-indigo-500 hover:text-indigo-400 text-sm font-semibold">Add Information</button></div>`;
             
             let notesHtml = '';
             if (loc['Notes']) {
                 const urlRegex = /(https?:\/\/[^\s]+)/g;
-                const processedNotes = loc['Notes'].replace(urlRegex, (url) => {
-                    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-indigo-500 dark:text-indigo-400 hover:underline">${url}</a>`;
-                });
+                const processedNotes = loc['Notes'].replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-indigo-500 dark:text-indigo-400 hover:underline">${url}</a>`);
                 notesHtml = `<p class="mt-4 text-gray-700 dark:text-gray-300">${processedNotes}</p>`;
             }
             
-            // This injects the final HTML into the pop-up and makes it visible.
             detailModalContent.innerHTML = `
                 <div class="flex justify-between items-start">
                     <div>
@@ -724,10 +727,8 @@
             if (addInfoBtn) {
                 addInfoBtn.addEventListener('click', () => {
                     closeDetailModal();
-                    // Use a timeout to allow the close animation to finish
                     setTimeout(() => {
-                        addForm.reset(); // Clear previous data
-                        // Pre-fill form with known data for this location
+                        addForm.reset();
                         document.getElementById('lat_long').value = loc['Lat_Long'] || `${map.getCenter().lat}, ${map.getCenter().lng}`;
                         document.getElementById('place_name').value = loc['Location'] || '';
                         document.getElementById('address').value = loc['Address'] || '';
@@ -738,14 +739,12 @@
                         document.getElementById('wifi_code').value = loc['WiFi Code'] || '';
                         document.getElementById('accessibility').value = loc['Accessibility'] || '';
                         document.getElementById('notes').value = loc['Notes'] || '';
-                        
                         addModal.classList.remove('hidden');
-                    }, 300); // Match modal fade out duration
+                    }, 300);
                 });
             }
         }
 
-        // This function handles closing the detail pop-up with a nice fade-out animation.
         function closeDetailModal() {
             detailModalContent.classList.remove('modal-enter');
             detailModalContent.classList.add('modal-leave');
@@ -756,80 +755,75 @@
             }, 300);
         }
 
-        // This lets you close the detail pop-up by clicking outside of it.
         detailModal.addEventListener('click', (e) => {
-            if (e.target === detailModal) {
-                closeDetailModal();
-            }
+            if (e.target === detailModal) { closeDetailModal(); }
         });
         
-        // This part handles opening and closing the info pop-up.
-        document.getElementById('info-btn').addEventListener('click', () => infoModal.classList.remove('hidden'));
-        document.getElementById('close-info-btn').addEventListener('click', () => infoModal.classList.add('hidden'));
-        infoModal.addEventListener('click', (e) => {
-            if (e.target === infoModal) infoModal.classList.add('hidden');
+        // --- EVENT LISTENERS ---
+
+        listViewToggle.addEventListener('click', () => {
+            const isHidden = rolodexView.classList.contains('hidden');
+            if (isHidden) {
+                populateRolodex();
+                legend.classList.add('hidden');
+                rolodexView.classList.remove('hidden');
+                setTimeout(() => rolodexView.classList.add('visible'), 10);
+                listViewToggle.classList.add('bg-indigo-600');
+                listViewToggle.title = "Switch to Map Legend";
+            } else {
+                rolodexView.classList.remove('visible');
+                listViewToggle.classList.remove('bg-indigo-600');
+                listViewToggle.title = "Toggle List View";
+                setTimeout(() => {
+                    rolodexView.classList.add('hidden');
+                    legend.classList.remove('hidden');
+                }, 300);
+            }
         });
 
-        // This part handles opening and closing the "Add Location" pop-up.
+        document.getElementById('info-btn').addEventListener('click', () => infoModal.classList.remove('hidden'));
+        document.getElementById('close-info-btn').addEventListener('click', () => infoModal.classList.add('hidden'));
+        infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.add('hidden'); });
+
         document.getElementById('add-location-btn').addEventListener('click', () => {
-            addForm.reset(); // Clear the form for a new entry
+            addForm.reset();
             const center = map.getCenter();
             document.getElementById('lat_long').value = `${center.lat}, ${center.lng}`;
             addModal.classList.remove('hidden');
         });
         document.getElementById('close-add-btn').addEventListener('click', () => addModal.classList.add('hidden'));
-        addModal.addEventListener('click', (e) => {
-            if (e.target === addModal) addModal.classList.add('hidden');
-        });
+        addModal.addEventListener('click', (e) => { if (e.target === addModal) addModal.classList.add('hidden'); });
         
-        // This handles submitting the new location form to your Google Sheet.
         addForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            
-            // IMPORTANT: Replace this with your actual Google Apps Script Web App URL
             const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpY5gQKheF--KuqtkzbEVt9v4fskaAmOkHhZBr0CEvRI-OJ3PyKTFFdZbcacJMG9X7/exec';
-
             const formData = new FormData(addForm);
             
-            // Provide user feedback during submission
             submitBtn.disabled = true;
-            submitBtn.innerHTML = `
-                <span class="material-symbols-outlined animate-spin mr-2">progress_activity</span>
-                Submitting...`;
+            submitBtn.innerHTML = `<span class="material-symbols-outlined animate-spin mr-2">progress_activity</span> Submitting...`;
 
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: formData
-            })
+            fetch(SCRIPT_URL, { method: 'POST', body: formData })
             .then(response => response.json())
             .then(data => {
                 if (data.result === 'success') {
                     showNotification('Thank you for your submission!', 'success');
-                    
-                    // Add new point to map dynamically
-                    const newLocationData = data.data;
-                    locationsData.push(newLocationData);
+                    locationsData.push(data.data);
                     plotMarkers();
                     filterMarkers(document.querySelector('#map-legend .filter-active').dataset.filter);
-
                     addModal.classList.add('hidden');
                     addForm.reset();
-                } else {
-                    throw new Error(data.message || 'Unknown error occurred.');
-                }
+                } else { throw new Error(data.message || 'Unknown error occurred.'); }
             })
             .catch(error => {
                 console.error('Error submitting form:', error);
                 showNotification('Submission failed. Please try again.', 'error');
             })
             .finally(() => {
-                // Restore button
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = 'Submit';
             });
         });
 
-        // Helper function to show notifications
         function showNotification(message, type = 'success') {
             const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
             const notification = document.createElement('div');
@@ -841,8 +835,6 @@
 
         // --- THEME AND CONTRAST TOGGLES ---
         const htmlEl = document.documentElement;
-
-        // This handles the light/dark mode toggle button.
         const themeToggleBtn = document.getElementById('theme-toggle-btn');
         const themeIcon = document.getElementById('theme-icon');
         
@@ -861,16 +853,15 @@
             updateThemeIcon();
         });
 
-        // This handles the high contrast mode toggle button.
         const contrastToggleBtn = document.getElementById('contrast-toggle-btn');
         const contrastIcon = document.getElementById('contrast-icon');
 
         function updateContrastIcon() {
             if (htmlEl.classList.contains('high-contrast')) {
-                contrastIcon.style.fontVariationSettings = "'FILL' 1"; // Filled icon
+                contrastIcon.style.fontVariationSettings = "'FILL' 1";
                 contrastToggleBtn.title = "Switch to Standard Contrast";
             } else {
-                contrastIcon.style.fontVariationSettings = "'FILL' 0"; // Outlined icon
+                contrastIcon.style.fontVariationSettings = "'FILL' 0";
                 contrastToggleBtn.title = "Switch to High Contrast Mode";
             }
         }
@@ -880,7 +871,6 @@
             updateContrastIcon();
         });
 
-        // Initialize icons on page load
         updateThemeIcon();
         updateContrastIcon();
     });
