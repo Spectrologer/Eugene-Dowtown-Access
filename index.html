@@ -9,10 +9,8 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4f46e5"/>
     
-    <!-- Tailwind CSS -->
+    <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Leaflet.js for Maps -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha2-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha2-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
@@ -21,215 +19,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
 
-    <style>
-        /* Base styles */
-        /* This ensures the background is black on load (since html starts with .dark) and transitions smoothly */
-        html {
-            background-color: #000000;
-            transition: background-color 0.3s ease;
-        }
-        html.dark {
-            background-color: #000000;
-        }
-        html:not(.dark) {
-            background-color: #ffffff;
-        }
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="style.css">
 
-        body {
-            font-family: 'Inter', sans-serif;
-            overscroll-behavior: none;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        
-        /* Material symbols icon size adjustment */
-        .material-symbols-outlined {
-          font-variation-settings:
-          'FILL' 0,
-          'wght' 400,
-          'GRAD' 0,
-          'opsz' 24
-        }
-
-        /* Leaflet map container */
-        #map {
-            height: 100vh;
-            width: 100vw;
-            z-index: 10;
-            background-color: #ffffff; /* Set background for light mode */
-        }
-        
-        .dark #map {
-            background-color: #000000; /* Set background for dark mode to prevent white flash */
-        }
-        
-        /* Dark mode map tiles */
-        .dark .leaflet-tile-pane {
-            filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
-        }
-
-        /* Custom marker styling */
-        .custom-marker {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            width: 32px;
-            height: 32px;
-            transition: transform 0.2s ease-in-out;
-        }
-        
-        /* Hover effect for marker */
-        .leaflet-marker-icon:hover .custom-marker {
-            transform: scale(1.25);
-        }
-        
-        /* Animation for modals */
-        .modal-enter {
-            animation: fadeIn 0.3s ease-out forwards;
-        }
-        .modal-leave {
-            animation: fadeOut 0.3s ease-in forwards;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeOut {
-            from { opacity: 1; transform: translateY(0); }
-            to { opacity: 0; transform: translateY(20px); }
-        }
-        
-        /* Legend filter styling */
-        #map-legend > div[data-filter] {
-            cursor: pointer;
-            transition: opacity 0.2s ease-in-out;
-        }
-        #map-legend > div[data-filter]:not(.filter-active) {
-            opacity: 0.6;
-        }
-        #map-legend > div[data-filter]:not(.filter-active):hover {
-            opacity: 0.9;
-        }
-
-        /* --- Rolodex List View Styles --- */
-        #rolodex-cards-container::-webkit-scrollbar {
-            width: 4px;
-        }
-        #rolodex-cards-container::-webkit-scrollbar-thumb {
-            background-color: #4a5568; /* gray-600 */
-            border-radius: 4px;
-        }
-        #rolodex-cards-container::-webkit-scrollbar-track {
-            background-color: transparent;
-        }
-        .rolodex-card {
-            opacity: 0;
-            transform: translateX(20px);
-            transition: opacity 0.3s ease-out, transform 0.3s ease-out, background-color 0.2s ease-in-out;
-        }
-        /* This class is added via JS to trigger the transition */
-        #rolodex-view.visible .rolodex-card {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        /* --- High Contrast & Larger Font Styles --- */
-        html.high-contrast {
-            font-size: 1.1rem; /* Larger base font size for readability */
-        }
-        
-        /* High contrast colors. Using !important to override Tailwind utilities. */
-        .high-contrast body,
-        .high-contrast .bg-white,
-        .high-contrast .dark\:bg-black,
-        .high-contrast .bg-white\/90,
-        .high-contrast .dark\:bg-gray-800\/90,
-        .high-contrast .dark\:bg-gray-800 {
-            background-color: #000000 !important;
-            color: #ffff00 !important; /* Yellow text on black background */
-        }
-
-        .high-contrast [class*="text-gray-"],
-        .high-contrast [class*="dark:text-gray-"],
-        .high-contrast [class*="text-yellow-"] {
-            color: #ffff00 !important;
-        }
-        
-        /* UI elements like buttons, modals, inputs */
-        .high-contrast .bg-gray-800\/80,
-        .high-contrast .dark\:bg-gray-800\/80,
-        .high-contrast .bg-gray-800\/50,
-        .high-contrast .dark\:bg-gray-900\/50,
-        .high-contrast .bg-yellow-100\/50,
-        .high-contrast .dark\:bg-yellow-900\/20,
-        .high-contrast .bg-indigo-600,
-        .high-contrast input,
-        .high-contrast textarea,
-        .high-contrast #detail-modal-content,
-        .high-contrast #info-modal > div,
-        .high-contrast #add-form,
-        .high-contrast #rolodex-view {
-            background-color: #000000 !important;
-            border: 2px solid #ffff00 !important;
-            color: #ffff00 !important;
-        }
-
-        .high-contrast .text-white, .high-contrast .dark\:text-white {
-             color: #ffff00 !important;
-        }
-
-        /* Links and interactive elements */
-        .high-contrast a,
-        .high-contrast .text-indigo-500,
-        .high-contrast .dark\:text-indigo-400 {
-            color: #00ffff !important; /* Cyan for better visibility of links */
-            text-decoration: underline;
-        }
-        .high-contrast button {
-             color: #00ffff !important;
-             text-decoration: none;
-        }
-
-        .high-contrast .hover\:bg-indigo-700:hover {
-            background-color: #333333 !important;
-        }
-        
-        /* Borders */
-        .high-contrast [class*="border-"] {
-            border-color: #ffff00 !important;
-        }
-
-        /* Remove blur effects in high contrast for clarity */
-        .high-contrast .backdrop-blur-sm,
-        .high-contrast .backdrop-blur-md {
-            backdrop-filter: none !important;
-        }
-        
-        /* Map specific adjustments */
-        .high-contrast #map {
-            background-color: #000 !important;
-        }
-        .high-contrast .leaflet-tile-pane {
-            /* High contrast filter for map tiles */
-            filter: brightness(0.8) grayscale(1) contrast(5);
-        }
-        
-        /* Custom marker colors */
-        .high-contrast .custom-marker {
-            border-color: #ffff00 !important;
-        }
-        .high-contrast .bg-green-600 { background-color: #006400 !important; } /* Dark Green */
-        .high-contrast .bg-purple-600 { background-color: #4b0082 !important; } /* Indigo */
-        .high-contrast .bg-blue-600 { background-color: #00008b !important; } /* Dark Blue */
-        .high-contrast .bg-gray-500 { background-color: #808080 !important; } /* Gray */
-        .high-contrast .custom-marker span {
-            color: #ffffff !important; /* Keep icons white for contrast against dark markers */
-        }
-    </style>
     <script>
-      // Apply Tailwind dark mode
+      // Apply Tailwind dark mode immediately
       tailwind.config = {
         darkMode: 'class',
       }
@@ -241,25 +35,25 @@
     <div id="map"></div>
 
     <!-- Last Updated Info -->
-    <div id="last-updated-container" class="absolute top-4 left-4 z-20 p-2 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg text-white text-xs">
-        <span>Loading data...</span>
+    <div id="last-updated-container" class="absolute top-4 left-4 z-20 p-2 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg text-white text-xs hidden">
+        <span></span>
     </div>
 
     <!-- UI Overlays -->
     
     <!-- Control Buttons -->
     <div class="absolute top-4 right-4 z-20 flex flex-col gap-3">
-        <button id="theme-toggle-btn" class="p-3 bg-gray-800/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg text-white" title="Toggle Light/Dark Mode">
+        <button id="theme-toggle-btn" class="p-3 bg-gray-800/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg text-white transition-transform transform hover:scale-105" title="Toggle Light/Dark Mode">
              <span id="theme-icon" class="material-symbols-outlined">lightbulb</span>
         </button>
-        <button id="contrast-toggle-btn" class="p-3 bg-gray-800/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg text-white" title="Toggle High Contrast Mode">
+        <button id="contrast-toggle-btn" class="p-3 bg-gray-800/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg text-white transition-transform transform hover:scale-105" title="Toggle High Contrast Mode">
              <span id="contrast-icon" class="material-symbols-outlined">contrast</span>
         </button>
     </div>
     
     <!-- Info Button -->
     <div class="absolute bottom-4 left-4 z-20">
-        <button id="info-btn" class="h-12 w-12 flex items-center justify-center bg-gray-800/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-full shadow-lg text-white" title="About this app">
+        <button id="info-btn" class="h-12 w-12 flex items-center justify-center bg-gray-800/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-full shadow-lg text-white transition-transform transform hover:scale-105" title="About this app">
             <span class="material-symbols-outlined">question_mark</span>
         </button>
     </div>
@@ -278,7 +72,7 @@
     
         <!-- Rolodex/List View (hidden by default) -->
         <div id="rolodex-view" class="order-2 hidden w-72 h-96 bg-gray-900/90 backdrop-blur-md rounded-lg shadow-2xl flex flex-col">
-            <h3 class="p-3 text-sm font-semibold text-gray-300 border-b border-gray-700/50 flex-shrink-0">Locations</h3>
+             <h3 class="p-3 text-sm font-semibold text-gray-300 border-b border-gray-700/50 flex-shrink-0">Locations</h3>
             <div id="rolodex-cards-container" class="flex-grow p-3 overflow-y-auto space-y-2">
                 <!-- Location cards will be dynamically inserted here by JavaScript -->
             </div>
@@ -291,20 +85,20 @@
                 <span>All Services</span>
             </div>
             <div class="flex items-center gap-2" data-filter="food">
-                <span class="w-4 h-4 rounded-full bg-green-600 border-2 border-white"></span>
+                <span class="material-symbols-outlined text-green-400">restaurant</span>
                 <span>Food</span>
             </div>
             <div class="flex items-center gap-2" data-filter="private">
-                <span class="w-4 h-4 rounded-full bg-purple-600 border-2 border-white"></span>
+                <span class="material-symbols-outlined text-purple-400">woman</span>
                 <span>Private Stalls</span>
             </div>
             <div class="flex items-center gap-2" data-filter="public">
-                <span class="w-4 h-4 rounded-full bg-blue-600 border-2 border-white"></span>
+                <span class="material-symbols-outlined text-blue-400">wc</span>
                 <span>Multi-Stall</span>
             </div>
-            <div class="flex items-center gap-2" data-filter="dubious">
-                <span class="w-4 h-4 rounded-full bg-gray-500 border-2 border-white"></span>
-                <span>Dubious</span>
+             <div class="flex items-center gap-2" data-filter="wifi">
+                <span class="material-symbols-outlined text-cyan-400">wifi</span>
+                <span>WiFi</span>
             </div>
         </div>
     </div>
@@ -396,484 +190,7 @@
         </form>
     </div>
 
-
-    <script>
-    // --- SERVICE WORKER REGISTRATION ---
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(registration => {
-                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                })
-                .catch(err => {
-                    console.log('ServiceWorker registration failed: ', err);
-                });
-        });
-    }
-    
-    document.addEventListener('DOMContentLoaded', () => {
-        
-        // Sets up the initial map view centered on Eugene.
-        const eugeneCoords = [44.048, -123.090]; 
-        const map = L.map('map', {
-            zoomControl: false, 
-        }).setView(eugeneCoords, 15);
-
-        // This sets the pannable map area to keep the user focused on Eugene.
-        const southWest = L.latLng(44.025, -123.125);
-        const northEast = L.latLng(44.070, -123.060);
-        const bounds = L.latLngBounds(southWest, northEast);
-        map.setMaxBounds(bounds);
-        map.setMinZoom(14); 
-        map.on('drag', function() {
-            map.panInsideBounds(bounds, { animate: false });
-        });
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
-
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-        // Close the detail modal when clicking on the map
-        map.on('click', () => {
-            if (!detailModal.classList.contains('hidden')) {
-                closeDetailModal();
-            }
-        });
-
-        // --- DOM ELEMENT SELECTORS ---
-        const detailModal = document.getElementById('detail-modal');
-        const detailModalContent = document.getElementById('detail-modal-content');
-        const infoModal = document.getElementById('info-modal');
-        const addModal = document.getElementById('add-modal');
-        const addForm = document.getElementById('add-form');
-        const submitBtn = document.getElementById('submit-btn');
-        const listViewToggle = document.getElementById('list-view-toggle');
-        const rolodexView = document.getElementById('rolodex-view');
-        const legend = document.getElementById('map-legend');
-        const rolodexCardsContainer = document.getElementById('rolodex-cards-container');
-
-        // --- GLOBAL STATE ---
-        let locationsData = [];
-        let allMarkers = []; // To hold all marker instances for filtering
-        
-        // --- ICON & MARKER CREATION ---
-        
-        // This part creates the icon content (e.g., restroom or food icon).
-        const createIcon = (tags, privacy) => {
-            const tagsLower = tags ? tags.toLowerCase() : '';
-            const privacyLower = privacy ? privacy.toLowerCase() : '';
-            let iconName = 'woman'; // Default to private stall (woman icon)
-
-            if (tagsLower.includes('food') || tagsLower.includes('restaurant') || tagsLower.includes('cafe') || tagsLower.includes('eat')) {
-                iconName = 'restaurant';
-            } else if (tagsLower.includes('dubious')) {
-                iconName = 'gpp_maybe';
-            } else if (privacyLower === 'public' || privacyLower === 'exposed') {
-                iconName = 'wc'; // Multi-stall
-            }
-            
-            return `<span class="material-symbols-outlined text-white text-lg">${iconName}</span>`;
-        };
-        
-        // Helper to get background color class, avoids duplicating logic from createCustomIcon
-        function getBgColorClass(privacy, tags) {
-            let bgColorClass = 'bg-purple-600'; // Default is purple for "Recommended"
-            const privacyLower = privacy ? privacy.toLowerCase() : '';
-            const tagsLower = tags ? tags.toLowerCase() : '';
-
-            if (tagsLower.includes('food') || tagsLower.includes('restaurant') || tagsLower.includes('cafe') || tagsLower.includes('eat')) {
-                bgColorClass = 'bg-green-600';
-            } else if (tagsLower.includes('dubious')) {
-                bgColorClass = 'bg-gray-500'; // Gray for "Use Caution"
-            } else if (privacyLower === 'public' || privacyLower === 'exposed') {
-                bgColorClass = 'bg-blue-600'; // Blue for "Public Access"
-            }
-            return bgColorClass;
-        }
-
-        // It decides what color the pin should be based on the "Privacy" and "Tags" columns from your sheet.
-        const createCustomIcon = (privacy, tags) => {
-            const bgColorClass = getBgColorClass(privacy, tags);
-            const iconContent = createIcon(tags, privacy);
-            const iconHtml = `<div class="custom-marker ${bgColorClass}">${iconContent}</div>`;
-            return L.divIcon({
-                className: '',
-                html: iconHtml,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
-            });
-        };
-
-        // --- DATA FETCHING & PROCESSING ---
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRMzAQbd3MdmdliQnNSPgFvX2309klOt524-HuUoojAc2c2kLKwG9Ftr75YUhsXzMfJtpFerLGlmQOK/pub?gid=0&single=true&output=csv';
-        const lastUpdatedContainer = document.getElementById('last-updated-container').querySelector('span');
-
-        fetch(CSV_URL)
-            .then(response => {
-                 if (!response.ok) { throw new Error('Network response was not ok'); }
-                const now = new Date();
-                const formattedDate = now.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-                lastUpdatedContainer.textContent = `Updated: ${formattedDate}`;
-                return response.text();
-            })
-            .then(csvText => {
-                locationsData = parseCSV(csvText);
-                plotMarkers();
-                setupFiltering();
-            })
-            .catch(error => {
-                console.error("Error fetching or parsing sheet data:", error);
-                lastUpdatedContainer.textContent = 'Using Offline Data';
-                showNotification('Could not load map data. Showing cached data if available.', 'error');
-            });
-
-        // This function takes the raw text from the Google Sheet and turns it into a structured list of locations.
-        function parseCSV(text) {
-            let lines = text.trim().split('\n');
-            let headerRowIndex = -1;
-            let headers = [];
-
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].includes('Location') && lines[i].includes('Privacy')) {
-                    headerRowIndex = i;
-                    headers = lines[i].split(',').map(h => h.trim().replace(/"/g, ''));
-                    break;
-                }
-            }
-
-            if (headerRowIndex === -1) { console.error("Header row not found."); return []; }
-            
-            let csvContent = lines.slice(headerRowIndex + 1).join('\n');
-            const result = [];
-            let inQuotes = false, field = '', record = {}, headerIndex = 0;
-
-            for (let i = 0; i < csvContent.length; i++) {
-                const char = csvContent[i];
-                if (char === '"') { inQuotes = !inQuotes; } 
-                else if (char === ',' && !inQuotes) {
-                    record[headers[headerIndex]] = field.trim();
-                    field = '';
-                    headerIndex++;
-                } else if (char === '\n' && !inQuotes) {
-                    record[headers[headerIndex]] = field.trim();
-                    if (Object.keys(record).length === headers.length && record['Location']) { result.push(record); }
-                    record = {}; field = ''; headerIndex = 0;
-                } else { field += char; }
-            }
-            if (headerIndex < headers.length) {
-                 record[headers[headerIndex]] = field.trim();
-                 if (Object.keys(record).length === headers.length && record['Location']) { result.push(record); }
-            }
-            return result.filter(row => row && row['Location'] && row['Location'].trim());
-        }
-        
-        // --- MAP & UI LOGIC ---
-        
-        // This function takes the location data and puts a pin on the map for each one.
-        function plotMarkers() {
-            allMarkers.forEach(marker => map.removeLayer(marker));
-            allMarkers = [];
-            if (locationsData.length === 0) { console.error('No location data to plot!'); return; }
-            
-            locationsData.forEach((loc) => {
-                let lat, long;
-                if (loc['Lat_Long']) {
-                    const coordStr = loc['Lat_Long'].trim();
-                    if (coordStr.includes(',')) {
-                        const coords = coordStr.split(',');
-                        lat = parseFloat(coords[0].trim());
-                        long = parseFloat(coords[1].trim());
-                    } else if (coordStr.includes(' ') && !coordStr.includes('Â°')) {
-                        const coords = coordStr.split(' ');
-                        lat = parseFloat(coords[0].trim());
-                        long = parseFloat(coords[1].trim());
-                    }
-                }
-                if (!isNaN(lat) && !isNaN(long) && lat !== 0 && long !== 0) {
-                    try {
-                        const marker = L.marker([lat, long], { icon: createCustomIcon(loc['Privacy'], loc['Tags']) });
-                        marker.locationData = loc;
-                        marker.on('click', (e) => {
-                            L.DomEvent.stopPropagation(e); // Prevent map click from closing the modal
-                            showLocationDetail(loc);
-                        });
-                        marker.addTo(map);
-                        allMarkers.push(marker);
-                    } catch (error) { console.error('Error adding marker:', error); }
-                } else { console.warn(`Skipping ${loc['Location']} - invalid coordinates.`); }
-            });
-        }
-        
-        // Sets up the click listeners and logic for filtering markers from the legend.
-        function setupFiltering() {
-            const legendItems = document.querySelectorAll('#map-legend > div[data-filter]');
-            legendItems.forEach(item => {
-                item.addEventListener('click', () => {
-                    const activeFilter = item.dataset.filter;
-                    legendItems.forEach(i => i.classList.remove('filter-active'));
-                    item.classList.add('filter-active');
-                    filterMarkers(activeFilter);
-                });
-            });
-        }
-
-        // Shows or hides markers based on the currently selected filter.
-        function filterMarkers(activeFilter) {
-            allMarkers.forEach(marker => {
-                const loc = marker.locationData;
-                const privacyLower = loc['Privacy'] ? loc['Privacy'].toLowerCase() : '';
-                const tagsLower = loc['Tags'] ? loc['Tags'].toLowerCase() : '';
-                let show = false;
-
-                if (activeFilter === 'all') { show = true; } 
-                else if (activeFilter === 'food') { if (tagsLower.includes('food') || tagsLower.includes('restaurant') || tagsLower.includes('cafe') || tagsLower.includes('eat')) show = true; } 
-                else if (activeFilter === 'dubious') { if (tagsLower.includes('dubious')) show = true; } 
-                else if (activeFilter === 'public') { if (!tagsLower.includes('dubious') && (privacyLower === 'public' || privacyLower === 'exposed')) show = true; } 
-                else if (activeFilter === 'private') { if (!tagsLower.includes('dubious') && !tagsLower.includes('food') && !tagsLower.includes('restaurant') && !tagsLower.includes('cafe') && !tagsLower.includes('eat') && privacyLower !== 'public' && privacyLower !== 'exposed') show = true; }
-                
-                if (show) { if (!map.hasLayer(marker)) map.addLayer(marker); } 
-                else { if (map.hasLayer(marker)) map.removeLayer(marker); }
-            });
-        }
-        
-        // --- ROLODEX / LIST VIEW ---
-        
-        // This function populates the rolodex list view with location cards.
-        function populateRolodex() {
-            rolodexCardsContainer.innerHTML = ''; // Clear previous
-            if (!locationsData || locationsData.length === 0) {
-                rolodexCardsContainer.innerHTML = '<p class="text-center text-gray-400 text-sm p-4">No locations loaded.</p>';
-                return;
-            }
-            const fragment = document.createDocumentFragment();
-            locationsData.forEach((loc, index) => {
-                const latLong = loc['Lat_Long'];
-                if (!latLong || !latLong.includes(',')) return; // Skip if no valid coords
-
-                const card = document.createElement('div');
-                card.className = 'rolodex-card flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg cursor-pointer hover:bg-indigo-500/30';
-                card.style.transitionDelay = `${index * 40}ms`; // Stagger the animation
-                
-                card.addEventListener('click', () => {
-                    const coords = latLong.split(',').map(c => parseFloat(c.trim()));
-                    if (!isNaN(coords[0]) && !isNaN(coords[1])) {
-                        map.flyTo([coords[0], coords[1]], 17); // Zoom in closer
-                        showLocationDetail(loc);
-                    }
-                });
-                
-                const iconHTML = `<div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getBgColorClass(loc['Privacy'], loc['Tags'])} border-2 border-white/50">${createIcon(loc['Tags'], loc['Privacy'])}</div>`;
-                const infoHTML = `<div class="flex-grow overflow-hidden"><h4 class="font-semibold text-white text-sm truncate">${loc['Location']}</h4><p class="text-gray-400 text-xs truncate">${loc['Address'] || 'No address'}</p></div>`;
-                card.innerHTML = iconHTML + infoHTML;
-                fragment.appendChild(card);
-            });
-            rolodexCardsContainer.appendChild(fragment);
-        }
-
-        // --- MODAL & DETAIL VIEW LOGIC ---
-
-        // This function builds the HTML for the location detail pop-up when you click a pin.
-        function showLocationDetail(loc) {
-            let servicesHtml = '';
-            if (loc['Access'] && loc['Access'].toLowerCase().trim() !== 'open') { servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-green-400 mt-1 flex-shrink-0">check_circle</span><div><span class="font-semibold">Access Requirements: ${loc['Access']}</span></div></li>`; }
-            if (loc['Privacy']) {
-                const privacyLower = loc['Privacy'].toLowerCase();
-                let privacyText = 'Private Stall';
-                if (privacyLower === 'public' || privacyLower === 'exposed') { privacyText = 'Multi Stall'; }
-                servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-blue-400 mt-1 flex-shrink-0">shield</span><div><span class="font-semibold">${privacyText}</span></div></li>`;
-            }
-            if (loc['Gendered']) { servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-pink-400 mt-1 flex-shrink-0">wc</span><div><span class="font-semibold">Bathroom Type: ${loc['Gendered']}</span></div></li>`; }
-            if (loc['WiFi Code']) { servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-purple-400 mt-1 flex-shrink-0">wifi</span><div><span class="font-semibold">WiFi Available</span><p class="text-sm text-gray-400">Password: ${loc['WiFi Code']}</p></div></li>`; }
-            if (loc['Hours']) {
-                const formattedHours = loc['Hours'].replace(/;/g, '<br>');
-                servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-yellow-400 mt-1 flex-shrink-0">schedule</span><div><span class="font-semibold">Operating Hours:</span><p class="text-sm text-gray-400 dark:text-gray-300">${formattedHours}</p></div></li>`;
-            }
-            if (loc['Accessibility'] && loc['Accessibility'].trim() !== '') {
-                const accessibilityLower = loc['Accessibility'].toLowerCase();
-                const isAccessible = accessibilityLower.includes('accessible') || accessibilityLower.includes('wheelchair') || accessibilityLower.includes('step-free');
-                if (isAccessible) { servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-orange-400 mt-1 flex-shrink-0">accessible</span><div><span class="font-semibold">Accessible</span></div></li>`; } 
-                else { servicesHtml += `<li class="flex items-start gap-3"><span class="material-symbols-outlined text-gray-500 mt-1 flex-shrink-0">block</span><div><span class="font-semibold">Not Accessible</span></div></li>`; }
-            }
-
-            let infoSectionHtml = servicesHtml ? `<div class="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700"><h4 class="font-semibold mb-2">Available Information</h4><ul class="space-y-2">${servicesHtml}</ul></div>`
-                : `<div class="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700 text-center"><p class="text-gray-500 dark:text-gray-400">No available information.</p><button id="add-info-btn" class="mt-2 text-indigo-500 hover:text-indigo-400 text-sm font-semibold">Add Information</button></div>`;
-            
-            let notesHtml = '';
-            if (loc['Notes']) {
-                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                const processedNotes = loc['Notes'].replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-indigo-500 dark:text-indigo-400 hover:underline">${url}</a>`);
-                notesHtml = `<p class="mt-4 text-gray-700 dark:text-gray-300">${processedNotes}</p>`;
-            }
-            
-            detailModalContent.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h3 class="text-2xl font-bold">${loc['Location'] || 'Unknown Location'}</h3>
-                        <p class="text-gray-500 dark:text-gray-400 text-sm">${loc['Address'] || 'Address not available'}</p>
-                        ${loc['Tags'] ? `<span class="inline-block mt-2 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-xs rounded-full">${loc['Tags']}</span>` : ''}
-                    </div>
-                     <button id="close-detail-btn" class="text-gray-400 text-2xl leading-none hover:text-gray-600 dark:hover:text-white">&times;</button>
-                </div>
-                ${notesHtml}
-                ${infoSectionHtml}
-            `;
-            detailModal.classList.remove('hidden');
-            document.getElementById('close-detail-btn').addEventListener('click', closeDetailModal);
-
-            const addInfoBtn = document.getElementById('add-info-btn');
-            if (addInfoBtn) {
-                addInfoBtn.addEventListener('click', () => {
-                    closeDetailModal();
-                    setTimeout(() => {
-                        addForm.reset();
-                        document.getElementById('lat_long').value = loc['Lat_Long'] || `${map.getCenter().lat}, ${map.getCenter().lng}`;
-                        document.getElementById('place_name').value = loc['Location'] || '';
-                        document.getElementById('address').value = loc['Address'] || '';
-                        document.getElementById('tags').value = loc['Tags'] || '';
-                        document.getElementById('access').value = loc['Access'] || '';
-                        document.getElementById('gendered').value = loc['Gendered'] || '';
-                        document.getElementById('hours').value = loc['Hours'] || '';
-                        document.getElementById('wifi_code').value = loc['WiFi Code'] || '';
-                        document.getElementById('accessibility').value = loc['Accessibility'] || '';
-                        document.getElementById('notes').value = loc['Notes'] || '';
-                        addModal.classList.remove('hidden');
-                    }, 300);
-                });
-            }
-        }
-
-        function closeDetailModal() {
-            detailModalContent.classList.remove('modal-enter');
-            detailModalContent.classList.add('modal-leave');
-            setTimeout(() => {
-                detailModal.classList.add('hidden');
-                detailModalContent.classList.remove('modal-leave');
-                detailModalContent.classList.add('modal-enter');
-            }, 300);
-        }
-
-        detailModal.addEventListener('click', (e) => {
-            if (e.target === detailModal) { closeDetailModal(); }
-        });
-        
-        // --- EVENT LISTENERS ---
-
-        listViewToggle.addEventListener('click', () => {
-            const isHidden = rolodexView.classList.contains('hidden');
-            if (isHidden) {
-                populateRolodex();
-                legend.classList.add('hidden');
-                rolodexView.classList.remove('hidden');
-                setTimeout(() => rolodexView.classList.add('visible'), 10);
-                listViewToggle.classList.add('bg-indigo-600');
-                listViewToggle.title = "Switch to Map Legend";
-            } else {
-                rolodexView.classList.remove('visible');
-                listViewToggle.classList.remove('bg-indigo-600');
-                listViewToggle.title = "Toggle List View";
-                setTimeout(() => {
-                    rolodexView.classList.add('hidden');
-                    legend.classList.remove('hidden');
-                }, 300);
-            }
-        });
-
-        document.getElementById('info-btn').addEventListener('click', () => infoModal.classList.remove('hidden'));
-        document.getElementById('close-info-btn').addEventListener('click', () => infoModal.classList.add('hidden'));
-        infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.add('hidden'); });
-
-        document.getElementById('add-location-btn').addEventListener('click', () => {
-            addForm.reset();
-            const center = map.getCenter();
-            document.getElementById('lat_long').value = `${center.lat}, ${center.lng}`;
-            addModal.classList.remove('hidden');
-        });
-        document.getElementById('close-add-btn').addEventListener('click', () => addModal.classList.add('hidden'));
-        addModal.addEventListener('click', (e) => { if (e.target === addModal) addModal.classList.add('hidden'); });
-        
-        addForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpY5gQKheF--KuqtkzbEVt9v4fskaAmOkHhZBr0CEvRI-OJ3PyKTFFdZbcacJMG9X7/exec';
-            const formData = new FormData(addForm);
-            
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<span class="material-symbols-outlined animate-spin mr-2">progress_activity</span> Submitting...`;
-
-            fetch(SCRIPT_URL, { method: 'POST', body: formData })
-            .then(response => response.json())
-            .then(data => {
-                if (data.result === 'success') {
-                    showNotification('Thank you for your submission!', 'success');
-                    locationsData.push(data.data);
-                    plotMarkers();
-                    filterMarkers(document.querySelector('#map-legend .filter-active').dataset.filter);
-                    addModal.classList.add('hidden');
-                    addForm.reset();
-                } else { throw new Error(data.message || 'Unknown error occurred.'); }
-            })
-            .catch(error => {
-                console.error('Error submitting form:', error);
-                showNotification('Submission failed. Please try again.', 'error');
-            })
-            .finally(() => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = 'Submit';
-            });
-        });
-
-        function showNotification(message, type = 'success') {
-            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
-            const notification = document.createElement('div');
-            notification.className = `fixed bottom-5 left-1/2 -translate-x-1/2 ${bgColor} text-white py-2 px-4 rounded-lg shadow-lg z-50`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 4000);
-        }
-
-        // --- THEME AND CONTRAST TOGGLES ---
-        const htmlEl = document.documentElement;
-        const themeToggleBtn = document.getElementById('theme-toggle-btn');
-        const themeIcon = document.getElementById('theme-icon');
-        
-        function updateThemeIcon() {
-            if (htmlEl.classList.contains('dark')) {
-                themeIcon.style.fontVariationSettings = "'FILL' 1";
-                themeToggleBtn.title = "Switch to Light Mode";
-            } else {
-                themeIcon.style.fontVariationSettings = "'FILL' 0";
-                themeToggleBtn.title = "Switch to Dark Mode";
-            }
-        }
-        
-        themeToggleBtn.addEventListener('click', () => {
-            htmlEl.classList.toggle('dark');
-            updateThemeIcon();
-        });
-
-        const contrastToggleBtn = document.getElementById('contrast-toggle-btn');
-        const contrastIcon = document.getElementById('contrast-icon');
-
-        function updateContrastIcon() {
-            if (htmlEl.classList.contains('high-contrast')) {
-                contrastIcon.style.fontVariationSettings = "'FILL' 1";
-                contrastToggleBtn.title = "Switch to Standard Contrast";
-            } else {
-                contrastIcon.style.fontVariationSettings = "'FILL' 0";
-                contrastToggleBtn.title = "Switch to High Contrast Mode";
-            }
-        }
-
-        contrastToggleBtn.addEventListener('click', () => {
-            htmlEl.classList.toggle('high-contrast');
-            updateContrastIcon();
-        });
-
-        updateThemeIcon();
-        updateContrastIcon();
-    });
-    </script>
+    <!-- Custom Script -->
+    <script src="script.js" defer></script>
 </body>
 </html>

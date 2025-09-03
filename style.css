@@ -1,0 +1,214 @@
+/* Base styles */
+/* This ensures the background is black on load (since html starts with .dark) and transitions smoothly */
+html {
+    background-color: #000000;
+    transition: background-color 0.3s ease;
+}
+html.dark {
+    background-color: #000000;
+}
+html:not(.dark) {
+    background-color: #ffffff;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    overscroll-behavior: none;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Material symbols icon size adjustment */
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 24
+}
+
+/* Leaflet map container */
+#map {
+    height: 100vh;
+    width: 100vw;
+    z-index: 10;
+    background-color: #ffffff; /* Set background for light mode */
+}
+
+.dark #map {
+    background-color: #000000; /* Set background for dark mode to prevent white flash */
+}
+
+/* Dark mode map tiles */
+.dark .leaflet-tile-pane {
+    filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+/* Custom marker styling */
+.custom-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    width: 32px;
+    height: 32px;
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Hover effect for marker */
+.leaflet-marker-icon:hover .custom-marker {
+    transform: scale(1.25);
+}
+
+/* Animation for modals */
+.modal-enter {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+.modal-leave {
+    animation: fadeOut 0.3s ease-in forwards;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(20px); }
+}
+
+/* Legend filter styling */
+#map-legend > div[data-filter] {
+    cursor: pointer;
+    transition: opacity 0.2s ease-in-out;
+}
+#map-legend > div[data-filter]:not(.filter-active) {
+    opacity: 0.6;
+}
+#map-legend > div[data-filter]:not(.filter-active):hover {
+    opacity: 0.9;
+}
+
+/* --- Rolodex List View Styles --- */
+#rolodex-cards-container::-webkit-scrollbar {
+    width: 4px;
+}
+#rolodex-cards-container::-webkit-scrollbar-thumb {
+    background-color: #4a5568; /* gray-600 */
+    border-radius: 4px;
+}
+#rolodex-cards-container::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+.rolodex-card {
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out, background-color 0.2s ease-in-out;
+}
+/* This class is added via JS to trigger the transition */
+#rolodex-view.visible .rolodex-card {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Allow map interaction behind add modal */
+#add-modal {
+    pointer-events: none;
+}
+#add-form {
+    pointer-events: auto;
+}
+
+/* --- High Contrast & Larger Font Styles --- */
+html.high-contrast {
+    font-size: 1.1rem; /* Larger base font size for readability */
+}
+
+/* High contrast colors. Using !important to override Tailwind utilities. */
+.high-contrast body,
+.high-contrast .bg-white,
+.high-contrast .dark\:bg-black,
+.high-contrast .bg-white\/90,
+.high-contrast .dark\:bg-gray-800\/90,
+.high-contrast .dark\:bg-gray-800 {
+    background-color: #000000 !important;
+    color: #ffff00 !important; /* Yellow text on black background */
+}
+
+.high-contrast [class*="text-gray-"],
+.high-contrast [class*="dark:text-gray-"],
+.high-contrast [class*="text-yellow-"] {
+    color: #ffff00 !important;
+}
+
+/* UI elements like buttons, modals, inputs */
+.high-contrast .bg-gray-800\/80,
+.high-contrast .dark\:bg-gray-800\/80,
+.high-contrast .bg-gray-800\/50,
+.high-contrast .dark\:bg-gray-900\/50,
+.high-contrast .bg-yellow-100\/50,
+.high-contrast .dark\:bg-yellow-900\/20,
+.high-contrast .bg-indigo-600,
+.high-contrast input,
+.high-contrast textarea,
+.high-contrast #detail-modal-content,
+.high-contrast #info-modal > div,
+.high-contrast #add-form,
+.high-contrast #rolodex-view {
+    background-color: #000000 !important;
+    border: 2px solid #ffff00 !important;
+    color: #ffff00 !important;
+}
+
+.high-contrast .text-white, .high-contrast .dark\:text-white {
+     color: #ffff00 !important;
+}
+
+/* Links and interactive elements */
+.high-contrast a,
+.high-contrast .text-indigo-500,
+.high-contrast .dark\:text-indigo-400 {
+    color: #00ffff !important; /* Cyan for better visibility of links */
+    text-decoration: underline;
+}
+.high-contrast button {
+     color: #00ffff !important;
+     text-decoration: none;
+}
+
+.high-contrast .hover\:bg-indigo-700:hover {
+    background-color: #333333 !important;
+}
+
+/* Borders */
+.high-contrast [class*="border-"] {
+    border-color: #ffff00 !important;
+}
+
+/* Remove blur effects in high contrast for clarity */
+.high-contrast .backdrop-blur-sm,
+.high-contrast .backdrop-blur-md {
+    backdrop-filter: none !important;
+}
+
+/* Map specific adjustments */
+.high-contrast #map {
+    background-color: #000 !important;
+}
+.high-contrast .leaflet-tile-pane {
+    /* A more readable high-contrast filter for map tiles */
+    filter: grayscale(1) invert(1) contrast(1.5);
+}
+
+/* Custom marker colors */
+.high-contrast .custom-marker {
+    border-color: #ffff00 !important;
+}
+.high-contrast .bg-green-600 { background-color: #006400 !important; } /* Dark Green */
+.high-contrast .bg-purple-600 { background-color: #4b0082 !important; } /* Indigo */
+.high-contrast .bg-blue-600 { background-color: #00008b !important; } /* Dark Blue */
+.high-contrast .bg-cyan-600 { background-color: #008b8b !important; } /* Dark Cyan */
+.high-contrast .bg-gray-500 { background-color: #808080 !important; } /* Gray */
+.high-contrast .custom-marker span {
+    color: #ffffff !important; /* Keep icons white for contrast against dark markers */
+}
