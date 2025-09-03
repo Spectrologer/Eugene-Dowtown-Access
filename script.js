@@ -112,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lastUpdatedContainer = document.getElementById('last-updated-container');
     const lastUpdatedSpan = lastUpdatedContainer.querySelector('span');
 
+    // The service worker will handle fetching the freshest data.
     fetch(CSV_URL)
         .then(response => {
              if (!response.ok) { throw new Error('Network response was not ok'); }
@@ -120,25 +121,26 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(csvText => {
             const storedCsv = localStorage.getItem('eugeneAccessCsvData');
             
-            // Only show the "Updated" toast if the data has actually changed.
-            if (csvText !== storedCsv) {
+            // By comparing the stringified versions of the parsed data, we ignore
+            // irrelevant differences like timestamps from Google's servers.
+            if (JSON.stringify(parseCSV(csvText)) !== JSON.stringify(parseCSV(storedCsv))) {
                 console.log('Sheet data has been modified. Updating local cache.');
                 localStorage.setItem('eugeneAccessCsvData', csvText);
-                
-                const now = new Date();
-                const formattedDate = now.toLocaleString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric', 
-                    hour: 'numeric', 
-                    minute: '2-digit',
-                    hour12: true
-                });
-                lastUpdatedSpan.textContent = `Updated: ${formattedDate}`;
-                lastUpdatedContainer.classList.remove('hidden');
             } else {
                 console.log('Sheet data is unchanged.');
-                lastUpdatedContainer.classList.add('hidden');
             }
+            
+            // Always display the last fetch time.
+            const now = new Date();
+            const formattedDate = now.toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true
+            });
+            lastUpdatedSpan.textContent = `Updated: ${formattedDate}`;
+            lastUpdatedContainer.classList.remove('hidden');
             
             locationsData = parseCSV(csvText);
             plotMarkers();
@@ -166,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Turns the raw text from the Google Sheet into a usable list of locations.
     function parseCSV(text) {
+        if (!text) return []; // Handle cases where text is null or undefined
         let lines = text.trim().split('\n');
         let headerRowIndex = -1;
         let headers = [];
