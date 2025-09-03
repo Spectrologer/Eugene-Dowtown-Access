@@ -128,6 +128,11 @@
     <!-- Map Container -->
     <div id="map"></div>
 
+    <!-- Last Updated Info -->
+    <div id="last-updated-container" class="absolute top-4 left-4 z-20 p-2 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg text-white text-xs">
+        <span>Loading data...</span>
+    </div>
+
     <!-- UI Overlays -->
     
     <!-- Theme Toggle Button -->
@@ -355,12 +360,22 @@
 
         // This is where the app grabs the data from your public Google Sheet.
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRMzAQbd3MdmdliQnNSPgFvX2309klOt524-HuUoojAc2c2kLKwG9Ftr75YUhsXzMfJtpFerLGlmQOK/pub?gid=0&single=true&output=csv';
+        const lastUpdatedContainer = document.getElementById('last-updated-container').querySelector('span');
 
         fetch(CSV_URL)
             .then(response => {
                  if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
+                const now = new Date();
+                const formattedDate = now.toLocaleString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true
+                });
+                lastUpdatedContainer.textContent = `Updated: ${formattedDate}`;
                 return response.text();
             })
             .then(csvText => {
@@ -371,6 +386,7 @@
             })
             .catch(error => {
                 console.error("Error fetching or parsing sheet data:", error);
+                lastUpdatedContainer.textContent = 'Using Offline Data';
                 // Attempt to show a notification to the user
                 showNotification('Could not load map data. Showing cached data if available.', 'error');
             });
