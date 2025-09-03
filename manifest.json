@@ -1,0 +1,21 @@
+{
+  "name": "Eugene Access",
+  "short_name": "Eugene Access",
+  "description": "A community-sourced map for essential services in Eugene, Oregon.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192/4f46e5/ffffff?text=EA",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://placehold.co/512x512/4f46e5/ffffff?text=EA",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
