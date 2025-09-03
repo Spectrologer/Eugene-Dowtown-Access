@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchBlocklist() {
         // --- IMPORTANT: Paste your "Publish to the web" CSV link for the 'blocklist' sheet tab here. ---
         // Ensure the sheet's general sharing setting is "Anyone with the link".
-        const BLOCKLIST_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRMzAQbd3MdmdliQnNSPgFvX2309klOt524-HuUoojAc2c2kLKwG9Ftr75YUhsXzMfJtpFerLGlmQOK/pub?gid=1262090079&single=true&output=csv'; 
+        const BLOCKLIST_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4KJi-cNJVKbT7cP8VFcDXPYld_R2-D5r3aNFdIARobTv-CzWqcdVl-LeDNJyhCPu6PWpYTho1O5Bg/pub?gid=1834778940&single=true&output=csv'; 
         
         // This check ensures a placeholder URL isn't being used.
         if (!BLOCKLIST_CSV_URL || BLOCKLIST_CSV_URL.toUpperCase().includes('PASTE_YOUR_BLOCKLIST_GOOGLE_SHEET_CSV_URL_HERE')) {
