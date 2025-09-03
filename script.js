@@ -64,6 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Holds all the location data once it's fetched.
     let locationsData = [];
     let allMarkers = []; 
+    let sheetLocations = [];
+    let apiLocations = [];
+    let showApiLocations = true; // Show by default
     
     
     // --- ICON & MARKER CREATION ---
@@ -76,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (tagsLower.includes('food')) iconName = 'restaurant';
         else if (tagsLower.includes('wifi')) iconName = 'wifi';
-        else if (privacyLower === 'public' || privacyLower === 'exposed') iconName = 'wc';
+        else if (privacyLower === 'public' || privacyLower === 'exposed' || tagsLower.includes('restroom')) iconName = 'wc';
         
         return `<span class="material-symbols-outlined text-white text-lg">${iconName}</span>`;
     };
@@ -88,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (tagsLower.includes('food')) bgColorClass = 'bg-green-600';
         else if (tagsLower.includes('wifi')) bgColorClass = 'bg-cyan-600';
-        else if (privacyLower === 'public' || privacyLower === 'exposed') bgColorClass = 'bg-blue-600';
+        else if (privacyLower === 'public' || privacyLower === 'exposed' || tagsLower.includes('restroom')) bgColorClass = 'bg-blue-600';
         
         return bgColorClass;
     }
@@ -109,70 +112,203 @@ document.addEventListener('DOMContentLoaded', () => {
     // Grabs the data from the Google Sheet and processes it.
     
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRMzAQbd3MdmdliQnNSPgFvX2309klOt524-HuUoojAc2c2kLKwG9Ftr75YUhsXzMfJtpFerLGlmQOK/pub?gid=0&single=true&output=csv';
+    const REFUGE_API_URL = 'https://www.refugerestrooms.org/api/v1/restrooms/by_location.json';
     const lastUpdatedContainer = document.getElementById('last-updated-container');
     const lastUpdatedSpan = lastUpdatedContainer.querySelector('span');
 
-    // The service worker will handle fetching the freshest data.
-    fetch(CSV_URL)
-        .then(response => {
-             if (!response.ok) { throw new Error('Network response was not ok'); }
-            return response.text();
-        })
-        .then(csvText => {
+    function getLastModifiedDate(csvText) {
+        if (!csvText) return null;
+        const lines = csvText.split('\n');
+        const modifiedLine = lines.find(line => 
+            line.toLowerCase().replace(/"/g, '').includes('last modified:')
+        );
+        if (modifiedLine) {
+            const parts = modifiedLine.split(',');
+            if (parts.length > 1) {
+                const dateString = parts[1].replace(/"/g, '').trim();
+                if (!dateString) return null;
+                const date = new Date(dateString);
+                if (date instanceof Date && !isNaN(date)) {
+                    return date;
+                } else {
+                    console.warn("Could not parse date string from sheet:", dateString);
+                }
+            }
+        }
+        return null;
+    }
+
+    async function fetchBlocklist() {
+        // --- IMPORTANT: Paste your "Publish to the web" CSV link for the 'blocklist' sheet tab here. ---
+        // Ensure the sheet's general sharing setting is "Anyone with the link".
+        const BLOCKLIST_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRMzAQbd3MdmdliQnNSPgFvX2309klOt524-HuUoojAc2c2kLKwG9Ftr75YUhsXzMfJtpFerLGlmQOK/pub?gid=1262090079&single=true&output=csv'; 
+        
+        // This check ensures a placeholder URL isn't being used.
+        if (!BLOCKLIST_CSV_URL || BLOCKLIST_CSV_URL.toUpperCase().includes('PASTE_YOUR_BLOCKLIST_GOOGLE_SHEET_CSV_URL_HERE')) {
+            console.log('BLOCKLIST_CSV_URL is not set. No locations will be blocked.');
+            return new Set();
+        }
+
+        try {
+            const response = await fetch(BLOCKLIST_CSV_URL);
+            if (!response.ok) {
+                console.warn(`Failed to fetch blocklist from Google Sheet: ${response.statusText}`);
+                return new Set();
+            }
+            const csvText = await response.text();
+            const lines = csvText.trim().split('\n').slice(1); // Skip header row
+            const blockedNames = new Set();
+            for (const line of lines) {
+                let name = line.trim().replace(/\r$/, ''); // Also remove carriage return
+                // Handle names that might be quoted in the CSV export
+                if (name.startsWith('"') && name.endsWith('"')) {
+                    name = name.substring(1, name.length - 1);
+                }
+                if (name) {
+                    blockedNames.add(name.toLowerCase().trim());
+                }
+            }
+            console.log(`Loaded ${blockedNames.size} locations from blocklist.`);
+            return blockedNames;
+        } catch (error) {
+            console.error("Error fetching or parsing blocklist from Google Sheet:", error);
+            return new Set(); // Return an empty set on any error
+        }
+    }
+
+    async function fetchApiData(lat, lng, blocklist = new Set()) {
+        try {
+            const response = await fetch(`${REFUGE_API_URL}?lat=${lat}&lng=${lng}&per_page=50`);
+            if (!response.ok) {
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+            const data = await response.json();
+            const mappedData = data.map(item => ({
+                'Location': item.name,
+                'Address': `${item.street}, ${item.city}`,
+                'Lat_Long': `${item.latitude}, ${item.longitude}`,
+                'Privacy': item.unisex ? 'Private' : 'Public', // Match internal values
+                'Gendered': item.unisex ? 'All-Gender' : 'Gendered',
+                'Accessibility': item.accessible ? 'Accessible' : 'Not Accessible',
+                'Notes': `${item.comment || ''} (Source: Refuge Restrooms API)`,
+                'Tags': 'Restroom',
+                'Access': item.directions || 'Open',
+                'Hours': '',
+                'WiFi Code': '',
+                'isApiSource': true // Flag for API data
+            }));
+
+            // Filter out any locations that are in the blocklist
+            const filteredData = mappedData.filter(item => {
+                const isBlocked = blocklist.has(item.Location.toLowerCase().trim());
+                if (isBlocked) {
+                    console.log(`Blocking API location due to blocklist: "${item.Location}"`);
+                }
+                return !isBlocked;
+            });
+
+            return filteredData;
+
+        } catch (error) {
+            console.error("Error fetching data from Refuge Restrooms API:", error);
+            return [];
+        }
+    }
+
+    function updateDisplayedLocations() {
+        const combined = showApiLocations ? [...sheetLocations, ...apiLocations] : [...sheetLocations];
+        
+        const uniqueLocations = [];
+        const seenLocations = new Set();
+        combined.forEach(loc => {
+            const locationIdentifier = loc['Location'].toLowerCase().trim();
+            if (!seenLocations.has(locationIdentifier)) {
+                seenLocations.add(locationIdentifier);
+                uniqueLocations.push(loc);
+            }
+        });
+
+        locationsData = uniqueLocations;
+        plotMarkers();
+        const activeFilter = document.querySelector('#map-legend .filter-active')?.dataset.filter || 'all';
+        filterMarkers(activeFilter);
+        populateRolodex();
+    }
+
+
+    async function loadAllData() {
+        const blocklist = await fetchBlocklist(); // Fetch the blocklist first
+
+        const [sheetResult, apiResult] = await Promise.allSettled([
+            fetch(CSV_URL).then(res => {
+                if (!res.ok) throw new Error('Network response for sheet was not ok');
+                return res.text();
+            }),
+            fetchApiData(eugeneCoords[0], eugeneCoords[1], blocklist) // Pass the blocklist to the API fetcher
+        ]);
+
+        if (sheetResult.status === 'fulfilled') {
+            const csvText = sheetResult.value;
             const storedCsv = localStorage.getItem('eugeneAccessCsvData');
-            
-            // By comparing the stringified versions of the parsed data, we ignore
-            // irrelevant differences like timestamps from Google's servers.
             if (JSON.stringify(parseCSV(csvText)) !== JSON.stringify(parseCSV(storedCsv))) {
                 console.log('Sheet data has been modified. Updating local cache.');
                 localStorage.setItem('eugeneAccessCsvData', csvText);
             } else {
                 console.log('Sheet data is unchanged.');
             }
-            
-            // Always display the last fetch time.
-            const now = new Date();
-            const formattedDate = now.toLocaleString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                hour: 'numeric', 
-                minute: '2-digit',
-                hour12: true
+            const modifiedDate = getLastModifiedDate(csvText);
+            const displayDate = modifiedDate || new Date();
+            const formattedDate = displayDate.toLocaleString('en-US', { 
+                month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
             });
             lastUpdatedSpan.textContent = `Updated: ${formattedDate}`;
+            if (!modifiedDate) {
+                 console.log("Could not find or parse 'Last Modified:' row in CSV, using fetch time as fallback.");
+            }
             lastUpdatedContainer.classList.remove('hidden');
-            
-            locationsData = parseCSV(csvText);
-            plotMarkers();
-            setupFiltering();
-        })
-        .catch(error => {
-            // This runs if the app can't connect to the internet.
-            console.error("Error fetching sheet data:", error);
+            sheetLocations = parseCSV(csvText);
+        } else {
+            console.error("Error fetching sheet data:", sheetResult.reason);
             const storedCsv = localStorage.getItem('eugeneAccessCsvData');
             if (storedCsv) {
-                console.log("Using offline data from localStorage.");
-                lastUpdatedSpan.textContent = 'Using Offline Data';
+                console.log("Using offline sheet data from localStorage.");
+                const modifiedDate = getLastModifiedDate(storedCsv);
+                let statusText = 'Using Offline Data';
+                if (modifiedDate) {
+                    const formattedDate = modifiedDate.toLocaleString('en-US', { 
+                        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
+                    });
+                    statusText = `Offline (Updated: ${formattedDate})`;
+                }
+                lastUpdatedSpan.textContent = statusText;
                 lastUpdatedContainer.classList.remove('hidden');
-
-                locationsData = parseCSV(storedCsv);
-                plotMarkers();
-                setupFiltering();
+                sheetLocations = parseCSV(storedCsv);
             } else {
-                console.error("No offline data available.");
+                console.error("No offline sheet data available.");
                 lastUpdatedSpan.textContent = 'Could not load map data.';
                 lastUpdatedContainer.classList.remove('hidden');
-                showNotification('Could not load map data. Please check your connection.', 'error');
+                showNotification('Could not load community map data. Please check your connection.', 'error');
             }
-        });
+        }
 
-    // Turns the raw text from the Google Sheet into a usable list of locations.
+        if (apiResult.status === 'fulfilled') {
+            apiLocations = apiResult.value;
+            console.log(`Fetched ${apiLocations.length} locations from API.`);
+        } else {
+            console.error("Error fetching API data:", apiResult.reason);
+            showNotification('Could not load additional locations.', 'error');
+        }
+        
+        updateDisplayedLocations();
+    }
+
+    loadAllData();
+
     function parseCSV(text) {
-        if (!text) return []; // Handle cases where text is null or undefined
+        if (!text) return [];
         let lines = text.trim().split('\n');
         let headerRowIndex = -1;
         let headers = [];
-
         for (let i = 0; i < lines.length; i++) {
             if (lines[i].includes('Location') && lines[i].includes('Privacy')) {
                 headerRowIndex = i;
@@ -180,25 +316,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             }
         }
-
         if (headerRowIndex === -1) {
             console.error("Header row not found.");
             return [];
         }
-        
         let csvContent = lines.slice(headerRowIndex + 1).join('\n');
-        
         const result = [];
         let inQuotes = false;
         let field = '';
         let record = {};
         let headerIndex = 0;
-
         for (let i = 0; i < csvContent.length; i++) {
             const char = csvContent[i];
-
-            if (char === '"') inQuotes = !inQuotes;
-            else if (char === ',' && !inQuotes) {
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
                 record[headers[headerIndex]] = field.trim();
                 field = '';
                 headerIndex++;
@@ -214,14 +346,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 field += char;
             }
         }
-
         if (headerIndex < headers.length) {
              record[headers[headerIndex]] = field.trim();
              if (Object.keys(record).length === headers.length && record['Location']) {
                 result.push(record);
             }
         }
-        
         return result.filter(row => row && row['Location'] && row['Location'].trim());
     }
 
@@ -287,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (activeFilter === 'all') show = true;
             else if (activeFilter === 'food') { if (tagsLower.includes('food')) show = true; } 
-            else if (activeFilter === 'wifi') { if ((loc['WiFi Code'] && loc['WiFi Code'].trim() !== '') || tagsLower.includes('wifi') || notesLower.includes('wifi')) show = true; }
+            else if (activeFilter === 'wifi') { if ((loc['WiFi Code'] && loc['WiFi Code'].trim() !== '') || tagsLower.includes('wifi') || notesLower.includes('wifi')) show = true; } 
             else if (activeFilter === 'public') { if (privacyLower === 'public' || privacyLower === 'exposed') show = true; } 
             else if (activeFilter === 'private') { if (!tagsLower.includes('food') && !tagsLower.includes('wifi') && privacyLower !== 'public' && privacyLower !== 'exposed') show = true; }
             
@@ -466,6 +596,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const apiToggle = document.getElementById('api-toggle');
+    const apiToggleSwitch = apiToggle.querySelector('.relative > div');
+
+    function updateApiToggleUI() {
+        const switchContainer = apiToggle.querySelector('.relative');
+        if (showApiLocations) {
+            switchContainer.classList.remove('bg-gray-600');
+            switchContainer.classList.add('bg-indigo-500');
+            apiToggleSwitch.classList.add('translate-x-5');
+        } else {
+            switchContainer.classList.add('bg-gray-600');
+            switchContainer.classList.remove('bg-indigo-500');
+            apiToggleSwitch.classList.remove('translate-x-5');
+        }
+    }
+
+    apiToggle.addEventListener('click', () => {
+        showApiLocations = !showApiLocations;
+        updateApiToggleUI();
+        updateDisplayedLocations();
+    });
+
     document.getElementById('info-btn').addEventListener('click', () => infoModal.classList.remove('hidden'));
     document.getElementById('close-info-btn').addEventListener('click', () => infoModal.classList.add('hidden'));
     infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.add('hidden'); });
@@ -545,5 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set initial icon states on load
     updateThemeIcon();
     updateContrastIcon();
+    updateApiToggleUI();
+    setupFiltering();
 });
 
