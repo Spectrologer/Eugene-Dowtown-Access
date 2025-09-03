@@ -521,8 +521,13 @@
                 <div class="flex justify-between items-start">
                     <div>
                         <h3 class="text-2xl font-bold">${loc['Location'] || 'Unknown Location'}</h3>
+<<<<<<< HEAD
                         <p class="text-gray-500 dark:text-gray-400 text-sm">${loc['address'] || 'Address not available'}</p>
                         ${loc['Tags'] ? `<span class="inline-block mt-2 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-xs rounded-full">${loc['Tags']}</span>` : ''}
+=======
+                        <p class="text-gray-400 text-sm">${loc['Address'] || 'Address not available'}</p>
+                        ${loc['Tags'] ? `<span class="inline-block mt-2 px-2 py-1 bg-gray-700 text-xs rounded-full">${loc['Tags']}</span>` : ''}
+>>>>>>> 0bdc42f4e60f6ff76331a623cf0ca52683c27144
                     </div>
                      <button id="close-detail-btn" class="text-gray-400 text-2xl leading-none hover:text-gray-600 dark:hover:text-white">&times;</button>
                 </div>
