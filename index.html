@@ -67,7 +67,7 @@
     </button>
 
     <!-- Legend & List View Container -->
-    <div class="absolute bottom-20 right-4 z-20 flex flex-col items-end gap-2">
+    <div class="absolute bottom-20 right-4 z-20 flex flex-col items-end gap-2 cursor-pointer">
         <!-- List View Toggle -->
         <button id="list-view-toggle" class="order-1 p-3 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg text-white transition-colors" title="Toggle List View">
             <span class="material-symbols-outlined">view_list</span>
@@ -82,39 +82,39 @@
         </div>
         
         <!-- Map Legend -->
-        <div id="map-legend" class="order-2 bg-gray-800/80 backdrop-blur-sm text-white p-3 rounded-lg shadow-lg text-sm space-y-2">
+        <div id="map-legend" class="order-2 bg-gray-800/80 backdrop-blur-sm text-white p-3 rounded-lg shadow-lg text-sm space-y-2 transition-all duration-300 ease-in-out">
             <div class="flex items-center gap-2 filter-active" data-filter="all">
                 <span class="material-symbols-outlined">filter_list</span>
-                <span>All Services</span>
+                <span class="legend-text">All Services</span>
             </div>
             <div class="flex items-center gap-2" data-filter="food">
                 <span class="material-symbols-outlined text-green-400">restaurant</span>
-                <span>Food</span>
+                <span class="legend-text">Food</span>
             </div>
             <div class="flex items-center gap-2" data-filter="private">
                 <span class="material-symbols-outlined text-purple-400">woman</span>
-                <span>Private Stalls</span>
+                <span class="legend-text">Private Stalls</span>
             </div>
             <div class="flex items-center gap-2" data-filter="public">
                 <span class="material-symbols-outlined text-blue-400">wc</span>
-                <span>Multi-Stall</span>
+                <span class="legend-text">Multi-Stall</span>
             </div>
              <div class="flex items-center gap-2" data-filter="wifi">
                 <span class="material-symbols-outlined text-cyan-400">wifi</span>
-                <span>WiFi</span>
+                <span class="legend-text">WiFi</span>
             </div>
-            <div class="border-t border-gray-700/50 my-2"></div> <!-- Separator -->
-            <div id="api-toggle" class="flex items-center justify-between gap-2 cursor-pointer" title="Toggle external locations">
+            <div class="border-t border-gray-700/50 my-2 legend-separator"></div>
+            <div id="api-toggle" class="flex items-center justify-between gap-2" title="Toggle external locations">
                 <div class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-amber-400">travel_explore</span>
-                    <span>External Sources</span>
+                    <span class="legend-text">External</span>
                 </div>
                 <!-- This is the toggle switch -->
                 <div class="relative w-10 h-5 bg-gray-600 rounded-full transition-colors">
                     <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform transform"></div>
                 </div>
             </div>
-            <p class="text-xs text-gray-400 -mt-1 pl-8">Unverified locations from Refuge Restrooms API.</p>
+            <p class="text-xs text-gray-400 -mt-1 pl-8 legend-text-small">Unverified locations from Refuge Restrooms API.</p>
         </div>
     </div>
 
@@ -204,7 +204,33 @@
         </form>
     </div>
 
-    <!-- Main application script -->
-    <script src="script.js" defer></script>
+    <!-- Onboarding Modal -->
+    <div id="onboarding-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 text-gray-800 dark:text-white w-full max-w-sm rounded-2xl shadow-2xl p-6 sm:p-8 modal-enter text-center">
+            <h2 class="text-2xl sm:text-3xl font-bold mb-2">Welcome to Eugene Access</h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">A community map for essential services.</p>
+            <div class="space-y-4 text-left mb-8">
+                <div class="flex items-center gap-4">
+                    <span class="material-symbols-outlined text-blue-400 text-3xl">wc</span>
+                    <p>Find safe, accessible restrooms.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="material-symbols-outlined text-green-400 text-3xl">restaurant</span>
+                    <p>Locate free food and water.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="material-symbols-outlined text-cyan-400 text-3xl">wifi</span>
+                    <p>Get connected with free WiFi.</p>
+                </div>
+            </div>
+            <button id="get-started-btn" class="w-full p-3 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 transition-colors text-white text-lg">Get Started</button>
+        </div>
+    </div>
+
+
+    <!-- The new modular scripts -->
+    <script type="module" src="data-service.js" defer></script>
+    <script type="module" src="map-manager.js" defer></script>
+    <script type="module" src="main.js" defer></script>
 </body>
 </html>

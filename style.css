@@ -2,7 +2,7 @@
 /* This ensures the background is black on load (since html starts with .dark) and transitions smoothly */
 html {
     background-color: #000000;
-    transition: background-color 0.3s ease;
+    transition: background-color: 0.3s ease;
 }
 html.dark {
     background-color: #000000;
@@ -69,17 +69,16 @@ body {
     animation: fadeOut 0.3s ease-in forwards;
 }
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(20px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes fadeOut {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(20px); }
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(20px) scale(0.98); }
 }
 
 /* Legend filter styling */
 #map-legend > div[data-filter] {
-    cursor: pointer;
     transition: opacity 0.2s ease-in-out;
 }
 #map-legend > div[data-filter]:not(.filter-active) {
@@ -88,6 +87,30 @@ body {
 #map-legend > div[data-filter]:not(.filter-active):hover {
     opacity: 0.9;
 }
+
+/* Collapsible Legend Styles */
+#map-legend .legend-text,
+#map-legend .legend-text-small,
+#map-legend .legend-separator,
+#map-legend #api-toggle .relative { /* Hides text and the toggle switch, but not the icon */
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+#map-legend.legend-expanded {
+    width: 170px; /* Expanded width */
+}
+#map-legend.legend-expanded .legend-text,
+#map-legend.legend-expanded .legend-text-small,
+#map-legend.legend-expanded .legend-separator,
+#map-legend.legend-expanded #api-toggle .relative { /* Shows text and the toggle switch */
+    display: block;
+    opacity: 1;
+}
+#map-legend.legend-expanded #api-toggle .legend-text {
+    display: inline;
+}
+
 
 /* --- Rolodex List View Styles --- */
 #rolodex-cards-container::-webkit-scrollbar {
@@ -153,6 +176,7 @@ html.high-contrast {
 .high-contrast textarea,
 .high-contrast #detail-modal-content,
 .high-contrast #info-modal > div,
+.high-contrast #onboarding-modal > div,
 .high-contrast #add-form,
 .high-contrast #rolodex-view {
     background-color: #000000 !important;

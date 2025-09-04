@@ -1,0 +1,134 @@
+export const MapManager = (() => {
+    let appState;
+    const eugeneCoords = [44.048, -123.090]; 
+    const southWest = L.latLng(44.025, -123.125);
+    const northEast = L.latLng(44.070, -123.060);
+    const bounds = L.latLngBounds(southWest, northEast);
+
+    function init(state) {
+        appState = state;
+        appState.map = L.map('map', { zoomControl: false }).setView(eugeneCoords, 15);
+        appState.map.setMaxBounds(bounds);
+        appState.map.setMinZoom(14); 
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(appState.map);
+
+        L.control.zoom({ position: 'bottomright' }).addTo(appState.map);
+
+        appState.map.on('drag', () => appState.map.panInsideBounds(bounds, { animate: false }));
+        appState.map.on('click', () => {
+            // Check if the detail modal exists and is not hidden
+            const detailModal = document.getElementById('detail-modal');
+            if (detailModal && !detailModal.classList.contains('hidden')) {
+                // Access UIStateManager from window scope
+                if (window.UIStateManager && window.UIStateManager.closeDetailModal) {
+                    window.UIStateManager.closeDetailModal();
+                }
+            }
+        });
+    }
+    
+    function flyToLocation(lat, long, zoom = 17) {
+        if (appState && appState.map) {
+            appState.map.flyTo([lat, long], zoom);
+        }
+    }
+    
+    function createIcon(tags, privacy) {
+        const tagsLower = tags ? tags.toLowerCase() : '';
+        const privacyLower = privacy ? privacy.toLowerCase() : '';
+        let iconName = 'woman';
+        if (tagsLower.includes('food')) iconName = 'restaurant';
+        else if (tagsLower.includes('wifi')) iconName = 'wifi';
+        else if (privacyLower === 'public' || privacyLower === 'exposed' || tagsLower.includes('restroom')) iconName = 'wc';
+        return `<span class="material-symbols-outlined text-white text-lg">${iconName}</span>`;
+    }
+
+    function getBgColorClass(privacy, tags) {
+        let bgColorClass = 'bg-purple-600';
+        const privacyLower = privacy ? privacy.toLowerCase() : '';
+        const tagsLower = tags ? tags.toLowerCase() : '';
+        if (tagsLower.includes('food')) bgColorClass = 'bg-green-600';
+        else if (tagsLower.includes('wifi')) bgColorClass = 'bg-cyan-600';
+        else if (privacyLower === 'public' || privacyLower === 'exposed' || tagsLower.includes('restroom')) bgColorClass = 'bg-blue-600';
+        return bgColorClass;
+    }
+
+    function createCustomIcon(privacy, tags) {
+        const bgColorClass = getBgColorClass(privacy, tags);
+        const iconContent = createIcon(tags, privacy);
+        const iconHtml = `<div class="custom-marker ${bgColorClass}">${iconContent}</div>`;
+        return L.divIcon({ className: '', html: iconHtml, iconSize: [32, 32], iconAnchor: [16, 16] });
+    }
+
+    function plotMarkers() {
+        if (!appState || !appState.map || !appState.allMarkers) {
+            console.warn('App state not properly initialized');
+            return;
+        }
+        
+        appState.allMarkers.forEach(marker => appState.map.removeLayer(marker));
+        appState.allMarkers = [];
+        
+        if (!appState.locationsData || appState.locationsData.length === 0) {
+            console.warn('No location data to plot!');
+            return;
+        }
+        
+        appState.locationsData.forEach((loc) => {
+            let lat, long;
+            if (loc['Lat_Long']) {
+                const coords = loc['Lat_Long'].split(',');
+                lat = parseFloat(coords[0].trim());
+                long = parseFloat(coords[1].trim());
+            }
+            if (!isNaN(lat) && !isNaN(long) && lat !== 0 && long !== 0) {
+                const marker = L.marker([lat, long], { icon: createCustomIcon(loc['Privacy'], loc['Tags']) });
+                marker.locationData = loc;
+                marker.on('click', (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    // Access UIStateManager from window scope
+                    if (window.UIStateManager && window.UIStateManager.showLocationDetail) {
+                        window.UIStateManager.showLocationDetail(loc);
+                    }
+                });
+                marker.addTo(appState.map);
+                appState.allMarkers.push(marker);
+            } else { 
+                console.warn(`Skipping ${loc['Location']} - invalid coordinates.`); 
+            }
+        });
+    }
+
+    function filterMarkers(activeFilter) {
+        if (!appState || !appState.allMarkers || !appState.map) {
+            console.warn('App state not properly initialized for filtering');
+            return;
+        }
+        
+        appState.allMarkers.forEach(marker => {
+            const loc = marker.locationData;
+            const privacyLower = loc['Privacy'] ? loc['Privacy'].toLowerCase() : '';
+            const tagsLower = loc['Tags'] ? loc['Tags'].toLowerCase() : '';
+            const notesLower = loc['Notes'] ? loc['Notes'].toLowerCase() : '';
+            let show = false;
+            
+            if (activeFilter === 'all') show = true;
+            else if (activeFilter === 'food') { if (tagsLower.includes('food')) show = true; } 
+            else if (activeFilter === 'wifi') { if ((loc['WiFi Code'] && loc['WiFi Code'].trim() !== '') || tagsLower.includes('wifi') || notesLower.includes('wifi')) show = true; } 
+            else if (activeFilter === 'public') { if (privacyLower === 'public' || privacyLower === 'exposed') show = true; } 
+            else if (activeFilter === 'private') { if (!tagsLower.includes('food') && !tagsLower.includes('wifi') && privacyLower !== 'public' && privacyLower !== 'exposed') show = true; }
+            
+            if (show) { if (!appState.map.hasLayer(marker)) appState.map.addLayer(marker); } 
+            else { if (appState.map.hasLayer(marker)) appState.map.removeLayer(marker); }
+        });
+    }
+
+    return { init, flyToLocation, plotMarkers, filterMarkers, getBgColorClass, createIcon };
+})();
+
+// Export individual functions for easier importing
+export const { init, flyToLocation, plotMarkers, filterMarkers, getBgColorClass, createIcon } = MapManager;
