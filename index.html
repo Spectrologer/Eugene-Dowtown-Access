@@ -8,7 +8,10 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4f46e5"/>
-    <link rel="icon" href="https://placehold.co/32x32/4f46e5/ffffff?text=EA">
+    <!-- Updated favicon to use eugo.svg from subfolder -->
+    <link rel="icon" href="images/eugo.svg" type="image/svg+xml">
+    <link rel="icon" href="images/eugo.svg" sizes="any" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="images/eugo.svg">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -144,7 +147,11 @@
                 </div>
                 <p>You can help improve this map by submitting new locations or providing updated information for existing ones using the <span class="material-symbols-outlined align-bottom text-base">add_circle</span> icon.</p>
             </div>
-            <a href="http://vaavery.com" target="_blank" rel="noopener noreferrer" class="block text-center mt-6 text-xs text-gray-500 hover:text-gray-400 transition-colors">vaavery.com</a>
+            <!-- Added animated GIF next to website link -->
+            <a href="http://vaavery.com" target="_blank" rel="noopener noreferrer" class="block text-center mt-8 text-s text-gray-500 hover:text-gray-400 transition-colors">
+                <img src="images/avi.gif" alt="avi" class="inline-block w-14 h-14 mr-1 align-middle opacity-60" />
+                vaavery.com
+            </a>
         </div>
     </div>
     
