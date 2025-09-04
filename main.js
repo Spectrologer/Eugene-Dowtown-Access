@@ -50,6 +50,26 @@ document.addEventListener('DOMContentLoaded', () => {
         map: null,
         htmlEl: document.documentElement,
     };
+
+    // --- LOCALIZED APP LOGIC ---
+    // This function is now defined locally instead of on the window object.
+    const updateDisplayedLocations = () => {
+        const combined = appState.showApiLocations ? [...appState.sheetLocations, ...appState.apiLocations] : [...appState.sheetLocations];
+        const uniqueLocations = [];
+        const seenLocations = new Set();
+        combined.forEach(loc => {
+            const locationIdentifier = loc['Location'].toLowerCase().trim();
+            if (!seenLocations.has(locationIdentifier)) {
+                seenLocations.add(locationIdentifier);
+                uniqueLocations.push(loc);
+            }
+        });
+        appState.locationsData = uniqueLocations;
+        plotMarkers();
+        const activeFilter = document.querySelector('#map-legend .filter-active')?.dataset.filter || 'all';
+        filterMarkers(activeFilter);
+        UIStateManager.populateRolodex();
+    };
     
     // --- UI STATE MANAGER ---
     const UIStateManager = (() => {
@@ -243,9 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     })();
 
-    // Make UIStateManager available globally for map-manager.js
-    window.UIStateManager = UIStateManager;
-
     // --- EVENT HANDLERS ---
     const EventHandlers = (() => {
         function setupListeners() {
@@ -359,34 +376,28 @@ document.addEventListener('DOMContentLoaded', () => {
         return { setupListeners };
     })();
     
-    // Global functions to access app state and update the UI/map
-    window.appState = appState;
-    window.updateDisplayedLocations = function() {
-        const combined = appState.showApiLocations ? [...appState.sheetLocations, ...appState.apiLocations] : [...appState.sheetLocations];
-        const uniqueLocations = [];
-        const seenLocations = new Set();
-        combined.forEach(loc => {
-            const locationIdentifier = loc['Location'].toLowerCase().trim();
-            if (!seenLocations.has(locationIdentifier)) {
-                seenLocations.add(locationIdentifier);
-                uniqueLocations.push(loc);
-            }
-        });
-        appState.locationsData = uniqueLocations;
-        plotMarkers();
-        const activeFilter = document.querySelector('#map-legend .filter-active')?.dataset.filter || 'all';
-        filterMarkers(activeFilter);
-        UIStateManager.populateRolodex();
-    };
-
     // --- KICKOFF ---
     function initApp() {
         try {
             if (!localStorage.getItem('onboardingComplete')) {
                 UI_ELEMENTS.onboardingModal.classList.remove('hidden');
             }
-            initMap(appState);
-            DataService.loadAllData(appState, UI_ELEMENTS, UIStateManager);
+
+            // Injecting dependencies into the map manager
+            const mapDependencies = {
+                showLocationDetail: UIStateManager.showLocationDetail,
+                closeDetailModal: UIStateManager.closeDetailModal
+            };
+            initMap(appState, mapDependencies);
+
+            // Injecting dependencies into the data service
+            const dataDependencies = {
+                UI_ELEMENTS,
+                UIStateManager,
+                updateDisplayedLocations
+            };
+            DataService.loadAllData(appState, dataDependencies);
+            
             EventHandlers.setupListeners();
             UIStateManager.updateThemeIcon();
             UIStateManager.updateContrastIcon();
@@ -398,4 +409,3 @@ document.addEventListener('DOMContentLoaded', () => {
     
     initApp();
 });
-

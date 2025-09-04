@@ -1,12 +1,16 @@
 export const MapManager = (() => {
     let appState;
+    let uiCallbacks; // Local variable to hold injected UI functions
+
     const eugeneCoords = [44.048, -123.090]; 
     const southWest = L.latLng(44.025, -123.125);
     const northEast = L.latLng(44.070, -123.060);
     const bounds = L.latLngBounds(southWest, northEast);
 
-    function init(state) {
+    function init(state, dependencies) {
         appState = state;
+        uiCallbacks = dependencies; // Store the passed-in functions
+
         appState.map = L.map('map', { zoomControl: false }).setView(eugeneCoords, 15);
         appState.map.setMaxBounds(bounds);
         appState.map.setMinZoom(14); 
@@ -20,12 +24,11 @@ export const MapManager = (() => {
 
         appState.map.on('drag', () => appState.map.panInsideBounds(bounds, { animate: false }));
         appState.map.on('click', () => {
-            // Check if the detail modal exists and is not hidden
             const detailModal = document.getElementById('detail-modal');
             if (detailModal && !detailModal.classList.contains('hidden')) {
-                // Access UIStateManager from window scope
-                if (window.UIStateManager && window.UIStateManager.closeDetailModal) {
-                    window.UIStateManager.closeDetailModal();
+                // Use the injected callback instead of the global window object
+                if (uiCallbacks && uiCallbacks.closeDetailModal) {
+                    uiCallbacks.closeDetailModal();
                 }
             }
         });
@@ -90,9 +93,9 @@ export const MapManager = (() => {
                 marker.locationData = loc;
                 marker.on('click', (e) => {
                     L.DomEvent.stopPropagation(e);
-                    // Access UIStateManager from window scope
-                    if (window.UIStateManager && window.UIStateManager.showLocationDetail) {
-                        window.UIStateManager.showLocationDetail(loc);
+                    // Use the injected callback instead of the global window object
+                    if (uiCallbacks && uiCallbacks.showLocationDetail) {
+                        uiCallbacks.showLocationDetail(loc);
                     }
                 });
                 marker.addTo(appState.map);

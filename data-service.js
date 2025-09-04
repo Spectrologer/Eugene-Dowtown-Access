@@ -115,7 +115,10 @@ export const DataService = (() => {
         }
     }
 
-    async function loadAllData(appState, UI_ELEMENTS, UIStateManager) {
+    // This function now accepts a single `dependencies` object.
+    async function loadAllData(appState, dependencies) {
+        const { UI_ELEMENTS, UIStateManager, updateDisplayedLocations } = dependencies;
+
         const blocklist = await fetchBlocklist();
         const [sheetResult, apiResult] = await Promise.allSettled([
             fetch(CSV_URL + '&cb=' + new Date().getTime()).then(res => res.ok ? res.text() : Promise.reject(new Error('Network response for sheet was not ok'))),
@@ -146,7 +149,7 @@ export const DataService = (() => {
                 UI_ELEMENTS.lastUpdatedContainer.classList.remove('hidden');
                 appState.sheetLocations = parseCSV(storedCsv);
             } else {
-                console.error("No offline sheet data available.");
+                console.error("No offline data available.");
                 UI_ELEMENTS.lastUpdatedSpan.textContent = 'Could not load map data.';
                 UI_ELEMENTS.lastUpdatedContainer.classList.remove('hidden');
                 UIStateManager.showNotification('Could not load community map data. Please check your connection.', 'error');
@@ -158,7 +161,8 @@ export const DataService = (() => {
             console.error("Error fetching API data:", apiResult.reason);
             UIStateManager.showNotification('Could not load additional locations.', 'error');
         }
-        window.updateDisplayedLocations();
+        // Use the injected callback instead of the global window object
+        updateDisplayedLocations();
     }
 
     return { loadAllData };
