@@ -3,8 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eugene Access</title>
     
+    <!-- SEO Meta Tags -->
+    <title>Eugene Access | Find Safe Restrooms, Food &amp; WiFi</title>
+    <meta name="description" content="A community-sourced map for finding essential services in Eugene, Oregon. Locate safe public restrooms, gender-neutral bathrooms, free food, and WiFi. A resource for everyone, including the unhoused, queer individuals, and those with digestive diseases.">
+    <meta name="keywords" content="eugene oregon, public restrooms, free food, free wifi, homeless resources, accessible restrooms, gender neutral restrooms, lgbtq safe, trans safe, crohn's, ibd, digestive disease, community map">
+    <!-- TODO: Replace "https://eugo.site/" with your actual domain -->
+    <link rel="canonical" href="https://eugo.site/">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://eugo.site/">
+    <meta property="og:title" content="Eugene Access | Find Safe Restrooms, Food & WiFi">
+    <meta property="og:description" content="A community map for essential services in Eugene, OR. Find safe restrooms, free food, WiFi, and more.">
+    <!-- TODO: Replace with a URL to a preview image (e.g., a screenshot of your map) -->
+    <meta property="og:image" content="images/eugo.svg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://eugo.site/">
+    <meta property="twitter:title" content="Eugene Access | Find Safe Restrooms, Food & WiFi">
+    <meta property="twitter:description" content="A community map for essential services in Eugene, OR. Find safe restrooms, free food, WiFi, and more.">
+    <meta property="twitter:image" content="images/eugo.svg">
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4f46e5"/>
@@ -34,8 +55,23 @@
         darkMode: 'class',
       }
     </script>
+    
+    <!-- Structured Data (JSON-LD) for Rich Snippets -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Eugene Access",
+      "url": "https://eugo.site/",
+      "abstract": "A community-driven map application designed to help individuals in Eugene, Oregon, find essential services such as safe and accessible restrooms (including all-gender options), free food sources, and public WiFi hotspots.",
+      "keywords": "eugene oregon, public restrooms, free food, free wifi, homeless resources, accessible restrooms, gender neutral restrooms, lgbtq safe, trans safe, crohn's, ibd, community map"
+    }
+    </script>
 </head>
 <body class="bg-white dark:bg-black text-gray-800 dark:text-gray-200 overflow-hidden">
+
+    <!-- Screen Reader / SEO H1 -->
+    <h1 class="sr-only">Eugene Access: Community Map for Restrooms, Food, and WiFi</h1>
 
     <!-- Map Container -->
     <div id="map"></div>
@@ -149,7 +185,7 @@
             </div>
             <!-- Added animated GIF next to website link -->
             <a href="http://vaavery.com" target="_blank" rel="noopener noreferrer" class="block text-center mt-8 text-s text-gray-500 hover:text-gray-400 transition-colors">
-                <img src="images/avi.gif" alt="avi" class="inline-block w-14 h-14 mr-1 align-middle opacity-60" />
+                <img src="images/avi.gif" alt="Animated avatar for the website creator" class="inline-block w-14 h-14 mr-1 align-middle opacity-60" />
                 vaavery.com
             </a>
         </div>
@@ -180,7 +216,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label for="access" class="text-sm text-gray-600 dark:text-gray-400">Access Requirements</label>
-                        <input type="text" id="access" name="access" placeholder="e.g., Free, Purchase Required" class="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 dark:text-white">
+                        <input type="text" id="access" name="access" placeholder="e.g., Free, Purchase Required" class="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-300 dark:border--gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 dark:text-white">
                     </div>
                     <div>
                         <label for="gendered" class="text-sm text-gray-600 dark:text-gray-400">Bathroom Type</label>
