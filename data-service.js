@@ -105,16 +105,36 @@ async function fetchBlocklist() {
 }
 
 /**
- * Fetches data from the Refuge Restrooms API.
+ * Fetches data from the Refuge Restrooms API, with caching.
  * @param {number} lat - Latitude for the API query.
  * @param {number} lng - Longitude for the API query.
  * @param {Set<string>} blocklist - A set of location names to filter out.
  * @returns {Promise<Array<Object>>} A promise that resolves to an array of location objects.
  */
 async function fetchApiData(lat, lng, blocklist) {
+    const cacheKey = 'refugeApiCache';
+    const ttl = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+    const cachedItem = localStorage.getItem(cacheKey);
+
+    if (cachedItem) {
+        try {
+            const { timestamp, data } = JSON.parse(cachedItem);
+            if (Date.now() - timestamp < ttl) {
+                console.log("Using fresh API data from localStorage.");
+                return data.filter(item => !blocklist.has(item.Location.toLowerCase().trim()));
+            }
+        } catch (e) {
+            console.error("Error parsing cached API data", e);
+            localStorage.removeItem(cacheKey); // Clear corrupted cache
+        }
+    }
+
     try {
+        console.log("Fetching fresh API data from network.");
         const response = await fetch(`${config.REFUGE_API_URL}?lat=${lat}&lng=${lng}&per_page=50`);
         if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+        
         const data = await response.json();
         const mappedData = data.map(item => ({
             'Location': item.name,
@@ -130,10 +150,27 @@ async function fetchApiData(lat, lng, blocklist) {
             'WiFi Code': '',
             'isApiSource': true
         }));
+        
+        const cachePayload = {
+            timestamp: Date.now(),
+            data: mappedData
+        };
+        localStorage.setItem(cacheKey, JSON.stringify(cachePayload));
+        
         return mappedData.filter(item => !blocklist.has(item.Location.toLowerCase().trim()));
     } catch (error) {
         console.error("Error fetching data from Refuge Restrooms API:", error);
-        return [];
+        if (cachedItem) {
+            console.log("API fetch failed. Using stale data from localStorage.");
+            try {
+                const { data } = JSON.parse(cachedItem);
+                return data.filter(item => !blocklist.has(item.Location.toLowerCase().trim()));
+            } catch(e) {
+                console.error("Error parsing stale cached API data", e);
+                return []; // fallback to empty if stale data is also corrupt
+            }
+        }
+        return []; // Return empty array if fetch fails and no cache exists
     }
 }
 
@@ -185,6 +222,8 @@ export async function loadAllData(appState, dependencies) {
     if (apiResult.status === 'fulfilled') {
         appState.apiLocations = apiResult.value;
     } else {
+        // This block might be less likely to be hit now since fetchApiData has its own fallback.
+        // It would only trigger on a more catastrophic failure within the promise itself.
         console.error("Error fetching API data:", apiResult.reason);
         UIStateManager.showNotification('Could not load additional locations.', 'error');
     }
