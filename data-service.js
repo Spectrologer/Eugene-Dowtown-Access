@@ -1,5 +1,10 @@
 import { config } from './config.js';
 
+// --- CONSTANTS ---
+const API_CACHE_KEY = 'refugeApiCache';
+const BLOCKLIST_CACHE_KEY = 'blocklistCache';
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
 /**
  * Parses raw CSV text into an array of objects.
  * This custom parser handles the specific format of the Google Sheet.
@@ -79,7 +84,7 @@ function getLastModifiedDate(csvText) {
 }
 
 /**
- * Fetches and parses the blocklist CSV to get a set of location names to exclude.
+ * Fetches and parses the blocklist CSV, with caching.
  * @returns {Promise<Set<string>>} A promise that resolves to a Set of lowercase location names.
  */
 async function fetchBlocklist() {
@@ -87,20 +92,48 @@ async function fetchBlocklist() {
         console.log('BLOCKLIST_CSV_URL is not set. No locations will be blocked.');
         return new Set();
     }
+    
+    const cachedItem = localStorage.getItem(BLOCKLIST_CACHE_KEY);
+    if (cachedItem) {
+        try {
+            const { timestamp, data } = JSON.parse(cachedItem);
+            if (Date.now() - timestamp < CACHE_TTL) {
+                console.log("Using fresh blocklist from localStorage.");
+                return new Set(data);
+            }
+        } catch (e) {
+            console.error("Error parsing cached blocklist data", e);
+            localStorage.removeItem(BLOCKLIST_CACHE_KEY);
+        }
+    }
+
     try {
+        console.log("Fetching fresh blocklist from network.");
         const response = await fetch(config.BLOCKLIST_CSV_URL + '&cb=' + new Date().getTime());
         if (!response.ok) throw new Error(`Failed to fetch blocklist: ${response.statusText}`);
+        
         const csvText = await response.text();
         const lines = csvText.trim().split('\n').slice(1);
-        const blockedNames = new Set();
-        for (const line of lines) {
-            let name = line.trim().replace(/\r$/, '').replace(/"/g, '');
-            if (name) blockedNames.add(name.toLowerCase().trim());
-        }
-        return blockedNames;
+        const blockedNames = lines.map(line => {
+            return line.trim().replace(/\r$/, '').replace(/"/g, '').toLowerCase().trim();
+        }).filter(name => name);
+
+        const cachePayload = { timestamp: Date.now(), data: blockedNames };
+        localStorage.setItem(BLOCKLIST_CACHE_KEY, JSON.stringify(cachePayload));
+        
+        return new Set(blockedNames);
     } catch (error) {
         console.error("Error fetching or parsing blocklist:", error);
-        return new Set();
+        if (cachedItem) {
+             console.log("Blocklist fetch failed. Using stale data from localStorage.");
+            try {
+                const { data } = JSON.parse(cachedItem);
+                return new Set(data);
+            } catch(e) {
+                console.error("Error parsing stale cached blocklist data", e);
+            }
+        }
+        return new Set(); // Return empty set if fetch fails and no cache exists
     }
 }
 
@@ -112,21 +145,18 @@ async function fetchBlocklist() {
  * @returns {Promise<Array<Object>>} A promise that resolves to an array of location objects.
  */
 async function fetchApiData(lat, lng, blocklist) {
-    const cacheKey = 'refugeApiCache';
-    const ttl = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-
-    const cachedItem = localStorage.getItem(cacheKey);
+    const cachedItem = localStorage.getItem(API_CACHE_KEY);
 
     if (cachedItem) {
         try {
             const { timestamp, data } = JSON.parse(cachedItem);
-            if (Date.now() - timestamp < ttl) {
+            if (Date.now() - timestamp < CACHE_TTL) {
                 console.log("Using fresh API data from localStorage.");
                 return data.filter(item => !blocklist.has(item.Location.toLowerCase().trim()));
             }
         } catch (e) {
             console.error("Error parsing cached API data", e);
-            localStorage.removeItem(cacheKey); // Clear corrupted cache
+            localStorage.removeItem(API_CACHE_KEY); // Clear corrupted cache
         }
     }
 
@@ -155,7 +185,7 @@ async function fetchApiData(lat, lng, blocklist) {
             timestamp: Date.now(),
             data: mappedData
         };
-        localStorage.setItem(cacheKey, JSON.stringify(cachePayload));
+        localStorage.setItem(API_CACHE_KEY, JSON.stringify(cachePayload));
         
         return mappedData.filter(item => !blocklist.has(item.Location.toLowerCase().trim()));
     } catch (error) {
@@ -229,3 +259,4 @@ export async function loadAllData(appState, dependencies) {
     }
     updateDisplayedLocations();
 }
+
