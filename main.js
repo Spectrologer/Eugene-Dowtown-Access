@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showApiLocations: true,
         map: null,
         htmlEl: document.documentElement,
+        activeFilters: new Set(['all']), // Use a Set for multiple filters
     };
 
     // --- LOCALIZED APP LOGIC ---
@@ -66,8 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         appState.locationsData = uniqueLocations;
         plotMarkers();
-        const activeFilter = document.querySelector('#map-legend .filter-active')?.dataset.filter || 'all';
-        filterMarkers(activeFilter);
+        // The active filter is now a set, convert to array for the function
+        filterMarkers(Array.from(appState.activeFilters));
         UIStateManager.populateRolodex();
     };
     
@@ -294,30 +295,60 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- Legend Interactivity ---
             UI_ELEMENTS.legend.addEventListener('click', (e) => {
                 const legend = UI_ELEMENTS.legend;
-                const isExpanded = legend.classList.contains('legend-expanded');
-                
                 const filterItem = e.target.closest('div[data-filter]');
                 const apiToggle = e.target.closest('#api-toggle');
 
-                if (filterItem || apiToggle) {
-                    if (!isExpanded) {
-                        legend.classList.add('legend-expanded');
-                    }
-                    
-                    if (filterItem) {
-                        const activeFilter = filterItem.dataset.filter;
-                        legend.querySelectorAll('div[data-filter]').forEach(i => i.classList.remove('filter-active'));
-                        filterItem.classList.add('filter-active');
-                        filterMarkers(activeFilter);
-                    } else { 
-                        appState.showApiLocations = !appState.showApiLocations;
-                        UIStateManager.updateApiToggleUI();
-                        updateDisplayedLocations();
-                    }
-                } else {
+                if (!filterItem && !apiToggle) {
                     legend.classList.toggle('legend-expanded');
+                    return;
+                }
+
+                if (!legend.classList.contains('legend-expanded')) {
+                    legend.classList.add('legend-expanded');
+                }
+
+                if (apiToggle) {
+                    appState.showApiLocations = !appState.showApiLocations;
+                    UIStateManager.updateApiToggleUI();
+                    updateDisplayedLocations();
+                    return;
+                }
+                
+                if (filterItem) {
+                    const filter = filterItem.dataset.filter;
+                    const allFilterItem = legend.querySelector('div[data-filter="all"]');
+
+                    if (filter === 'all') {
+                        appState.activeFilters.clear();
+                        appState.activeFilters.add('all');
+                        legend.querySelectorAll('div[data-filter]').forEach(i => i.classList.remove('filter-active'));
+                        allFilterItem.classList.add('filter-active');
+                    } else {
+                        // If 'all' is currently active, remove it before adding specific filters.
+                        if (appState.activeFilters.has('all')) {
+                            appState.activeFilters.delete('all');
+                            allFilterItem.classList.remove('filter-active');
+                        }
+
+                        // Toggle the current filter
+                        if (appState.activeFilters.has(filter)) {
+                            appState.activeFilters.delete(filter);
+                            filterItem.classList.remove('filter-active');
+                        } else {
+                            appState.activeFilters.add(filter);
+                            filterItem.classList.add('filter-active');
+                        }
+
+                        // If no filters are left, default back to 'all'.
+                        if (appState.activeFilters.size === 0) {
+                            appState.activeFilters.add('all');
+                            allFilterItem.classList.add('filter-active');
+                        }
+                    }
+                    filterMarkers(Array.from(appState.activeFilters));
                 }
             });
+
 
             document.addEventListener('click', (e) => {
                 const legend = UI_ELEMENTS.legend;

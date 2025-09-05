@@ -79,13 +79,24 @@ body {
 
 /* Legend filter styling */
 #map-legend > div[data-filter] {
-    transition: opacity 0.2s ease-in-out;
+    transition: opacity 0.2s ease-in-out, font-weight 0.2s ease-in-out;
+    cursor: pointer;
+}
+#map-legend > div[data-filter] .material-symbols-outlined {
+    transition: filter 0.2s ease-in-out; /* Smooth transition for brightness */
 }
 #map-legend > div[data-filter]:not(.filter-active) {
     opacity: 0.6;
 }
 #map-legend > div[data-filter]:not(.filter-active):hover {
     opacity: 0.9;
+}
+#map-legend > div[data-filter].filter-active {
+    opacity: 1;
+    font-weight: 600; /* semibold */
+}
+#map-legend > div[data-filter].filter-active .material-symbols-outlined {
+    filter: brightness(1.5); /* Brighten the icon */
 }
 
 /* Collapsible Legend Styles */

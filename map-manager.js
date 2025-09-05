@@ -106,32 +106,55 @@ export const MapManager = (() => {
         });
     }
 
-    function filterMarkers(activeFilter) {
+    function filterMarkers(activeFilters) {
         if (!appState || !appState.allMarkers || !appState.map) {
             console.warn('App state not properly initialized for filtering');
             return;
         }
-        
+
+        const isAllFilterActive = activeFilters.length === 0 || activeFilters.includes('all');
+
         appState.allMarkers.forEach(marker => {
+            if (isAllFilterActive) {
+                if (!appState.map.hasLayer(marker)) appState.map.addLayer(marker);
+                return; // Continue to the next marker
+            }
+            
             const loc = marker.locationData;
             const privacyLower = loc['Privacy'] ? loc['Privacy'].toLowerCase() : '';
             const tagsLower = loc['Tags'] ? loc['Tags'].toLowerCase() : '';
             const notesLower = loc['Notes'] ? loc['Notes'].toLowerCase() : '';
-            let show = false;
-            
-            if (activeFilter === 'all') show = true;
-            else if (activeFilter === 'food') { if (tagsLower.includes('food')) show = true; } 
-            else if (activeFilter === 'wifi') { if ((loc['WiFi Code'] && loc['WiFi Code'].trim() !== '') || tagsLower.includes('wifi') || notesLower.includes('wifi')) show = true; } 
-            else if (activeFilter === 'public') { if (privacyLower === 'public' || privacyLower === 'exposed') show = true; } 
-            else if (activeFilter === 'private') { if (!tagsLower.includes('food') && !tagsLower.includes('wifi') && privacyLower !== 'public' && privacyLower !== 'exposed') show = true; }
-            
-            if (show) { if (!appState.map.hasLayer(marker)) appState.map.addLayer(marker); } 
-            else { if (appState.map.hasLayer(marker)) appState.map.removeLayer(marker); }
+            const hasBathroom = privacyLower || tagsLower.includes('restroom') || notesLower.includes('restroom') || notesLower.includes('bathroom');
+
+            // Check if the location matches ALL active filters
+            const matchesAllFilters = activeFilters.every(filter => {
+                switch (filter) {
+                    case 'food':
+                        return tagsLower.includes('food');
+                    case 'wifi':
+                        return (loc['WiFi Code'] && loc['WiFi Code'].trim() !== '') || tagsLower.includes('wifi') || notesLower.includes('wifi');
+                    case 'public':
+                        return hasBathroom && (privacyLower === 'public' || privacyLower === 'exposed');
+                    case 'private':
+                        return hasBathroom && (privacyLower !== 'public' && privacyLower !== 'exposed');
+                    default:
+                        // If an unknown filter gets in, don't block the location because of it.
+                        return true; 
+                }
+            });
+
+            if (matchesAllFilters) {
+                if (!appState.map.hasLayer(marker)) appState.map.addLayer(marker);
+            } else {
+                if (appState.map.hasLayer(marker)) appState.map.removeLayer(marker);
+            }
         });
     }
+
 
     return { init, flyToLocation, plotMarkers, filterMarkers, getBgColorClass, createIcon };
 })();
 
 // Export individual functions for easier importing
 export const { init, flyToLocation, plotMarkers, filterMarkers, getBgColorClass, createIcon } = MapManager;
+
