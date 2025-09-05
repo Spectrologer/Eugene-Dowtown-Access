@@ -6,6 +6,65 @@ const BLOCKLIST_CACHE_KEY = 'blocklistCache';
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 /**
+ * A generic utility to fetch data from a URL, cache it in localStorage,
+ * and handle TTL (Time-To-Live) and network fallbacks.
+ * @param {string} url - The URL to fetch data from.
+ * @param {string} cacheKey - The key to use for localStorage.
+ * @param {number} ttl - The time-to-live for the cache in milliseconds.
+ * @param {function} transformFn - A function to transform the raw response text/json into the desired data structure.
+ * @param {object} [fetchOptions={}] - Optional options for the fetch call.
+ * @returns {Promise<any>} A promise that resolves to the transformed data.
+ */
+async function fetchAndCache(url, cacheKey, ttl, transformFn, fetchOptions = {}) {
+    const cachedItem = localStorage.getItem(cacheKey);
+
+    if (cachedItem) {
+        try {
+            const { timestamp, data } = JSON.parse(cachedItem);
+            if (Date.now() - timestamp < ttl) {
+                console.log(`Using fresh data for ${cacheKey} from localStorage.`);
+                return data;
+            }
+        } catch (e) {
+            console.error(`Error parsing cached data for ${cacheKey}`, e);
+            localStorage.removeItem(cacheKey); // Clear corrupted cache
+        }
+    }
+
+    try {
+        console.log(`Fetching fresh data for ${cacheKey} from network.`);
+        const response = await fetch(url, fetchOptions);
+        if (!response.ok) throw new Error(`Network request failed for ${url}: ${response.statusText}`);
+
+        // Handle both JSON and text responses
+        const responseData = response.headers.get('content-type')?.includes('application/json')
+            ? await response.json()
+            : await response.text();
+            
+        const transformedData = await transformFn(responseData);
+
+        const cachePayload = { timestamp: Date.now(), data: transformedData };
+        localStorage.setItem(cacheKey, JSON.stringify(cachePayload));
+        
+        return transformedData;
+    } catch (error) {
+        console.error(`Error fetching or transforming data for ${cacheKey}:`, error);
+        if (cachedItem) {
+            console.log(`Fetch failed for ${cacheKey}. Using stale data from localStorage.`);
+            try {
+                const { data } = JSON.parse(cachedItem);
+                return data;
+            } catch (e) {
+                console.error(`Error parsing stale cached data for ${cacheKey}`, e);
+            }
+        }
+        // Return a default empty state if fetch fails and no cache exists
+        return await transformFn(null); 
+    }
+}
+
+
+/**
  * Parses raw CSV text into an array of objects.
  * This custom parser handles the specific format of the Google Sheet.
  * @param {string} text - The raw CSV string.
@@ -84,7 +143,7 @@ function getLastModifiedDate(csvText) {
 }
 
 /**
- * Fetches and parses the blocklist CSV, with caching.
+ * Fetches and parses the blocklist CSV, using the caching utility.
  * @returns {Promise<Set<string>>} A promise that resolves to a Set of lowercase location names.
  */
 async function fetchBlocklist() {
@@ -93,79 +152,31 @@ async function fetchBlocklist() {
         return new Set();
     }
     
-    const cachedItem = localStorage.getItem(BLOCKLIST_CACHE_KEY);
-    if (cachedItem) {
-        try {
-            const { timestamp, data } = JSON.parse(cachedItem);
-            if (Date.now() - timestamp < CACHE_TTL) {
-                console.log("Using fresh blocklist from localStorage.");
-                return new Set(data);
-            }
-        } catch (e) {
-            console.error("Error parsing cached blocklist data", e);
-            localStorage.removeItem(BLOCKLIST_CACHE_KEY);
-        }
-    }
-
-    try {
-        console.log("Fetching fresh blocklist from network.");
-        const response = await fetch(config.BLOCKLIST_CSV_URL + '&cb=' + new Date().getTime());
-        if (!response.ok) throw new Error(`Failed to fetch blocklist: ${response.statusText}`);
-        
-        const csvText = await response.text();
+    const transformFn = (csvText) => {
+        if (!csvText) return new Set();
         const lines = csvText.trim().split('\n').slice(1);
         const blockedNames = lines.map(line => {
             return line.trim().replace(/\r$/, '').replace(/"/g, '').toLowerCase().trim();
         }).filter(name => name);
-
-        const cachePayload = { timestamp: Date.now(), data: blockedNames };
-        localStorage.setItem(BLOCKLIST_CACHE_KEY, JSON.stringify(cachePayload));
-        
         return new Set(blockedNames);
-    } catch (error) {
-        console.error("Error fetching or parsing blocklist:", error);
-        if (cachedItem) {
-             console.log("Blocklist fetch failed. Using stale data from localStorage.");
-            try {
-                const { data } = JSON.parse(cachedItem);
-                return new Set(data);
-            } catch(e) {
-                console.error("Error parsing stale cached blocklist data", e);
-            }
-        }
-        return new Set(); // Return empty set if fetch fails and no cache exists
-    }
+    };
+
+    // Note: We use { cache: 'reload' } to ensure we get the latest blocklist, similar to the main CSV.
+    return fetchAndCache(config.BLOCKLIST_CSV_URL, BLOCKLIST_CACHE_KEY, CACHE_TTL, transformFn, { cache: 'reload' });
 }
 
 /**
- * Fetches data from the Refuge Restrooms API, with caching.
+ * Fetches data from the Refuge Restrooms API, using the caching utility.
  * @param {number} lat - Latitude for the API query.
  * @param {number} lng - Longitude for the API query.
  * @param {Set<string>} blocklist - A set of location names to filter out.
  * @returns {Promise<Array<Object>>} A promise that resolves to an array of location objects.
  */
 async function fetchApiData(lat, lng, blocklist) {
-    const cachedItem = localStorage.getItem(API_CACHE_KEY);
+    const url = `${config.REFUGE_API_URL}?lat=${lat}&lng=${lng}&per_page=50`;
 
-    if (cachedItem) {
-        try {
-            const { timestamp, data } = JSON.parse(cachedItem);
-            if (Date.now() - timestamp < CACHE_TTL) {
-                console.log("Using fresh API data from localStorage.");
-                return data.filter(item => !blocklist.has(item.Location.toLowerCase().trim()));
-            }
-        } catch (e) {
-            console.error("Error parsing cached API data", e);
-            localStorage.removeItem(API_CACHE_KEY); // Clear corrupted cache
-        }
-    }
-
-    try {
-        console.log("Fetching fresh API data from network.");
-        const response = await fetch(`${config.REFUGE_API_URL}?lat=${lat}&lng=${lng}&per_page=50`);
-        if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-        
-        const data = await response.json();
+    const transformFn = (data) => {
+        if (!data) return [];
         const mappedData = data.map(item => ({
             'Location': item.name,
             'Address': `${item.street}, ${item.city}`,
@@ -180,29 +191,15 @@ async function fetchApiData(lat, lng, blocklist) {
             'WiFi Code': '',
             'isApiSource': true
         }));
-        
-        const cachePayload = {
-            timestamp: Date.now(),
-            data: mappedData
-        };
-        localStorage.setItem(API_CACHE_KEY, JSON.stringify(cachePayload));
-        
-        return mappedData.filter(item => !blocklist.has(item.Location.toLowerCase().trim()));
-    } catch (error) {
-        console.error("Error fetching data from Refuge Restrooms API:", error);
-        if (cachedItem) {
-            console.log("API fetch failed. Using stale data from localStorage.");
-            try {
-                const { data } = JSON.parse(cachedItem);
-                return data.filter(item => !blocklist.has(item.Location.toLowerCase().trim()));
-            } catch(e) {
-                console.error("Error parsing stale cached API data", e);
-                return []; // fallback to empty if stale data is also corrupt
-            }
-        }
-        return []; // Return empty array if fetch fails and no cache exists
-    }
+        return mappedData;
+    };
+
+    const apiData = await fetchAndCache(url, API_CACHE_KEY, CACHE_TTL, transformFn);
+    // The Set is converted to an array in the cache, so we reconstruct it for filtering.
+    const blocklistSet = new Set(blocklist); 
+    return apiData.filter(item => !blocklistSet.has(item.Location.toLowerCase().trim()));
 }
+
 
 /**
  * Main data loading function. Fetches from the Google Sheet and the API concurrently,
@@ -215,7 +212,7 @@ export async function loadAllData(appState, dependencies) {
 
     const blocklist = await fetchBlocklist();
     const [sheetResult, apiResult] = await Promise.allSettled([
-        fetch(config.CSV_URL + '&cb=' + new Date().getTime()).then(res => res.ok ? res.text() : Promise.reject(new Error('Network response for sheet was not ok'))),
+        fetch(config.CSV_URL, { cache: 'reload' }).then(res => res.ok ? res.text() : Promise.reject(new Error('Network response for sheet was not ok'))),
         fetchApiData(44.048, -123.090, blocklist)
     ]);
 
