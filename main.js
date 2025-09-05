@@ -1,5 +1,6 @@
 import { init as initMap, flyToLocation, getBgColorClass, createIcon, plotMarkers, filterMarkers } from './map-manager.js';
-import { DataService } from './data-service.js';
+import { loadAllData } from './data-service.js';
+import { config } from './config.js';
 
 // --- APP INITIALIZATION & SERVICE WORKER ---
 if ('serviceWorker' in navigator) {
@@ -53,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- LOCALIZED APP LOGIC ---
-    // This function is now defined locally instead of on the window object.
     const updateDisplayedLocations = () => {
         const combined = appState.showApiLocations ? [...appState.sheetLocations, ...appState.apiLocations] : [...appState.sheetLocations];
         const uniqueLocations = [];
@@ -67,7 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         appState.locationsData = uniqueLocations;
         plotMarkers();
-        // The active filter is now a set, convert to array for the function
         filterMarkers(Array.from(appState.activeFilters));
         UIStateManager.populateRolodex();
     };
@@ -292,7 +291,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             
-            // --- Legend Interactivity ---
             UI_ELEMENTS.legend.addEventListener('click', (e) => {
                 const legend = UI_ELEMENTS.legend;
                 const filterItem = e.target.closest('div[data-filter]');
@@ -324,13 +322,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         legend.querySelectorAll('div[data-filter]').forEach(i => i.classList.remove('filter-active'));
                         allFilterItem.classList.add('filter-active');
                     } else {
-                        // If 'all' is currently active, remove it before adding specific filters.
                         if (appState.activeFilters.has('all')) {
                             appState.activeFilters.delete('all');
                             allFilterItem.classList.remove('filter-active');
                         }
 
-                        // Toggle the current filter
                         if (appState.activeFilters.has(filter)) {
                             appState.activeFilters.delete(filter);
                             filterItem.classList.remove('filter-active');
@@ -339,7 +335,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             filterItem.classList.add('filter-active');
                         }
 
-                        // If no filters are left, default back to 'all'.
                         if (appState.activeFilters.size === 0) {
                             appState.activeFilters.add('all');
                             allFilterItem.classList.add('filter-active');
@@ -348,7 +343,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     filterMarkers(Array.from(appState.activeFilters));
                 }
             });
-
 
             document.addEventListener('click', (e) => {
                 const legend = UI_ELEMENTS.legend;
@@ -378,14 +372,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             UI_ELEMENTS.addForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpY5gQKheF--KuqtkzbEVt9v4fskaAmOkHhZBr0CEvRI-OJ3PyKTFFdZbcacJMG9X7/exec';
                 const formData = new FormData(UI_ELEMENTS.addForm);
                 
                 UI_ELEMENTS.submitBtn.disabled = true;
                 UI_ELEMENTS.submitBtn.innerHTML = `<span class="material-symbols-outlined animate-spin mr-2">progress_activity</span> Submitting...`;
 
                 try {
-                    const response = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
+                    const response = await fetch(config.SCRIPT_URL, { method: 'POST', body: formData });
                     const data = await response.json();
                     if (data.result === 'success') {
                         UIStateManager.showNotification('Thank you for your submission!', 'success');
@@ -414,20 +407,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 UI_ELEMENTS.onboardingModal.classList.remove('hidden');
             }
 
-            // Injecting dependencies into the map manager
             const mapDependencies = {
                 showLocationDetail: UIStateManager.showLocationDetail,
                 closeDetailModal: UIStateManager.closeDetailModal
             };
             initMap(appState, mapDependencies);
 
-            // Injecting dependencies into the data service
             const dataDependencies = {
                 UI_ELEMENTS,
                 UIStateManager,
                 updateDisplayedLocations
             };
-            DataService.loadAllData(appState, dataDependencies);
+            loadAllData(appState, dataDependencies);
             
             EventHandlers.setupListeners();
             UIStateManager.updateThemeIcon();
