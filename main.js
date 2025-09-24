@@ -197,6 +197,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!isNaN(coords[0]) && !isNaN(coords[1])) {
                         flyToLocation(coords[0], coords[1]);
                         showLocationDetail(loc);
+                        // Close the rolodex after selecting a location on mobile devices
+                        if (window.innerWidth < 768) {
+                            UI_ELEMENTS.rolodexView.classList.remove('visible');
+                            UI_ELEMENTS.rolodexView.classList.remove('expanded');
+                            UI_ELEMENTS.listViewToggle.classList.remove('bg-indigo-600');
+                            UI_ELEMENTS.listViewToggle.title = "Toggle List View";
+                            setTimeout(() => {
+                                UI_ELEMENTS.rolodexView.classList.add('hidden');
+                                UI_ELEMENTS.legend.classList.remove('hidden');
+                            }, 300);
+                        }
                     }
                 });
                 const iconHTML = `<div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getBgColorClass(loc['Privacy'], loc['Tags'])} border-2 border-white/50">${createIcon(loc['Tags'], loc['Privacy'])}</div>`;
@@ -296,20 +307,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const filterItem = e.target.closest('div[data-filter]');
                 const apiToggle = e.target.closest('#api-toggle');
 
-                if (legend.classList.contains('legend-expanded')) {
-                    legend.classList.remove('legend-expanded');
-                    return;
-                }
-
-                if (!filterItem && !apiToggle) {
-                    legend.classList.add('legend-expanded');
-                    return;
-                }
-
-                if (!legend.classList.contains('legend-expanded')) {
-                    legend.classList.add('legend-expanded');
-                }
-
                 if (apiToggle) {
                     appState.showApiLocations = !appState.showApiLocations;
                     UIStateManager.updateApiToggleUI();
@@ -322,29 +319,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     const allFilterItem = legend.querySelector('div[data-filter="all"]');
 
                     if (filter === 'all') {
-                        appState.activeFilters.clear();
-                        appState.activeFilters.add('all');
-                        legend.querySelectorAll('div[data-filter]').forEach(i => i.classList.remove('filter-active'));
-                        allFilterItem.classList.add('filter-active');
-                    } else {
-                        if (appState.activeFilters.has('all')) {
-                            appState.activeFilters.delete('all');
-                            allFilterItem.classList.remove('filter-active');
-                        }
-
-                        if (appState.activeFilters.has(filter)) {
-                            appState.activeFilters.delete(filter);
-                            filterItem.classList.remove('filter-active');
-                        } else {
-                            appState.activeFilters.add(filter);
-                            filterItem.classList.add('filter-active');
-                        }
-
-                        if (appState.activeFilters.size === 0) {
-                            appState.activeFilters.add('all');
-                            allFilterItem.classList.add('filter-active');
-                        }
+                        legend.classList.toggle('legend-expanded');
+                        return;
                     }
+
+                    if (appState.activeFilters.has('all')) {
+                        appState.activeFilters.delete('all');
+                        allFilterItem.classList.remove('filter-active');
+                    }
+
+                    if (appState.activeFilters.has(filter)) {
+                        appState.activeFilters.delete(filter);
+                        filterItem.classList.remove('filter-active');
+                    } else {
+                        appState.activeFilters.add(filter);
+                        filterItem.classList.add('filter-active');
+                    }
+
+                    if (appState.activeFilters.size === 0) {
+                        appState.activeFilters.add('all');
+                        allFilterItem.classList.add('filter-active');
+                    }
+
                     filterMarkers(Array.from(appState.activeFilters));
                 }
             });
@@ -356,7 +352,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const rolodex = UI_ELEMENTS.rolodexView;
-                if (rolodex.classList.contains('expanded') && !rolodex.contains(e.target) && !e.target.closest('#list-view-toggle')) {
+                const detailModal = UI_ELEMENTS.detailModal;
+                if (rolodex.classList.contains('expanded') && !rolodex.contains(e.target) && !e.target.closest('#list-view-toggle') && detailModal.classList.contains('hidden')) {
                     UI_ELEMENTS.rolodexView.classList.remove('visible');
                     UI_ELEMENTS.rolodexView.classList.remove('expanded');
                     UI_ELEMENTS.listViewToggle.classList.remove('bg-indigo-600');
