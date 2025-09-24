@@ -151,18 +151,24 @@ async function fetchBlocklist() {
         console.log('BLOCKLIST_CSV_URL is not set. No locations will be blocked.');
         return new Set();
     }
-    
-    const transformFn = (csvText) => {
-        if (!csvText) return new Set();
-        const lines = csvText.trim().split('\n').slice(1);
-        const blockedNames = lines.map(line => {
-            return line.trim().replace(/\r$/, '').replace(/"/g, '').toLowerCase().trim();
-        }).filter(name => name);
-        return new Set(blockedNames);
-    };
 
-    // Note: We use { cache: 'reload' } to ensure we get the latest blocklist, similar to the main CSV.
-    return fetchAndCache(config.BLOCKLIST_CSV_URL, BLOCKLIST_CACHE_KEY, CACHE_TTL, transformFn, { cache: 'reload' });
+    try {
+        const transformFn = (csvText) => {
+            if (!csvText) return [];
+            const lines = csvText.trim().split('\n').slice(1);
+            const blockedNames = lines.map(line => {
+                return line.trim().replace(/\r$/, '').replace(/"/g, '').toLowerCase().trim();
+            }).filter(name => name);
+            return blockedNames;
+        };
+
+        // Note: We use { cache: 'reload' } to ensure we get the latest blocklist, similar to the main CSV.
+        const blocklistArray = await fetchAndCache(config.BLOCKLIST_CSV_URL, BLOCKLIST_CACHE_KEY, CACHE_TTL, transformFn, { cache: 'reload' });
+        return new Set(blocklistArray);
+    } catch (error) {
+        console.error('Error fetching blocklist:', error);
+        return new Set(); // Return empty set on error
+    }
 }
 
 /**
@@ -256,4 +262,3 @@ export async function loadAllData(appState, dependencies) {
     }
     updateDisplayedLocations();
 }
-

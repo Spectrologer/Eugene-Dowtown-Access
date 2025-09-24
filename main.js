@@ -2,14 +2,7 @@ import { init as initMap, flyToLocation, getBgColorClass, createIcon, plotMarker
 import { loadAllData } from './data-service.js';
 import { config } from './config.js';
 
-// --- APP INITIALIZATION & SERVICE WORKER ---
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-            .then(registration => console.log('ServiceWorker registration successful with scope: ', registration.scope))
-            .catch(err => console.log('ServiceWorker registration failed: ', err));
-    });
-}
+// --- APP INITIALIZATION ---
 
 document.addEventListener('DOMContentLoaded', () => {
     // A quick reference to all the interactive HTML elements we need to use.
