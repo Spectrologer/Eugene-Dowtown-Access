@@ -2,7 +2,7 @@
 /* This ensures the background is black on load (since html starts with .dark) and transitions smoothly */
 html {
     background-color: #000000;
-    transition: background-color: 0.3s ease;
+    transition: background-color, 0.3s ease;
 }
 html.dark {
     background-color: #000000;
@@ -100,6 +100,11 @@ body {
 }
 
 /* Collapsible Legend Styles */
+#map-legend {
+    width: 60px; /* Collapsed width to fit icons */
+    overflow: hidden; /* Prevent content overflow during transition */
+    transition: width 0.3s ease-in-out; /* Smooth width transition */
+}
 #map-legend .legend-text,
 #map-legend .legend-text-small,
 #map-legend .legend-separator,
@@ -124,6 +129,14 @@ body {
 
 
 /* --- Rolodex List View Styles --- */
+#rolodex-view {
+    width: 0;
+    overflow: hidden;
+    transition: width 0.3s ease-in-out;
+}
+#rolodex-view.expanded {
+    width: 18rem; /* w-72 */
+}
 #rolodex-cards-container::-webkit-scrollbar {
     width: 4px;
 }

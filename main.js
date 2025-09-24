@@ -265,16 +265,23 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             UI_ELEMENTS.listViewToggle.addEventListener('click', () => {
-                const isHidden = UI_ELEMENTS.rolodexView.classList.contains('hidden');
-                if (isHidden) {
+                if (UI_ELEMENTS.legend.classList.contains('legend-expanded')) {
+                    UI_ELEMENTS.legend.classList.remove('legend-expanded');
+                    return;
+                }
+
+                const isExpanded = UI_ELEMENTS.rolodexView.classList.contains('expanded');
+                if (!isExpanded) {
                     UIStateManager.populateRolodex();
                     UI_ELEMENTS.legend.classList.add('hidden');
                     UI_ELEMENTS.rolodexView.classList.remove('hidden');
+                    UI_ELEMENTS.rolodexView.classList.add('expanded');
                     setTimeout(() => UI_ELEMENTS.rolodexView.classList.add('visible'), 10);
                     UI_ELEMENTS.listViewToggle.classList.add('bg-indigo-600');
                     UI_ELEMENTS.listViewToggle.title = "Switch to Map Legend";
                 } else {
                     UI_ELEMENTS.rolodexView.classList.remove('visible');
+                    UI_ELEMENTS.rolodexView.classList.remove('expanded');
                     UI_ELEMENTS.listViewToggle.classList.remove('bg-indigo-600');
                     UI_ELEMENTS.listViewToggle.title = "Toggle List View";
                     setTimeout(() => {
@@ -289,8 +296,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const filterItem = e.target.closest('div[data-filter]');
                 const apiToggle = e.target.closest('#api-toggle');
 
+                if (legend.classList.contains('legend-expanded')) {
+                    legend.classList.remove('legend-expanded');
+                    return;
+                }
+
                 if (!filterItem && !apiToggle) {
-                    legend.classList.toggle('legend-expanded');
+                    legend.classList.add('legend-expanded');
                     return;
                 }
 
@@ -304,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateDisplayedLocations();
                     return;
                 }
-                
+
                 if (filterItem) {
                     const filter = filterItem.dataset.filter;
                     const allFilterItem = legend.querySelector('div[data-filter="all"]');
@@ -341,6 +353,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const legend = UI_ELEMENTS.legend;
                 if (legend.classList.contains('legend-expanded') && !legend.contains(e.target) && !e.target.closest('#list-view-toggle')) {
                     legend.classList.remove('legend-expanded');
+                }
+
+                const rolodex = UI_ELEMENTS.rolodexView;
+                if (rolodex.classList.contains('expanded') && !rolodex.contains(e.target) && !e.target.closest('#list-view-toggle')) {
+                    UI_ELEMENTS.rolodexView.classList.remove('visible');
+                    UI_ELEMENTS.rolodexView.classList.remove('expanded');
+                    UI_ELEMENTS.listViewToggle.classList.remove('bg-indigo-600');
+                    UI_ELEMENTS.listViewToggle.title = "Toggle List View";
+                    setTimeout(() => {
+                        UI_ELEMENTS.rolodexView.classList.add('hidden');
+                        UI_ELEMENTS.legend.classList.remove('hidden');
+                    }, 300);
                 }
             });
 
